@@ -1,0 +1,32 @@
+[
+  {
+    "name": "lv_font_regular_{size}",
+    "size": [46, 28],
+    "fonts": [
+      {
+        "file": "Roboto-Regular.ttf",
+        "range": "0x20-0x7F,0xB0,0x2022"
+      }
+    ]
+  },
+  {
+    "name": "lv_font_medium_{size}",
+    "size": [46, 28],
+    "fonts": [
+      {
+        "file": "Roboto-Medium.ttf",
+        "range": "0x20-0x7F,0xB0,0x2022"
+      }
+    ]
+  },
+  {
+    "name": "lv_font_icons_{size}",
+    "size": [33, 24],
+    "fonts": [
+      {
+        "file": "fa-solid-900.ttf",
+        "range": "0xf1b2,0xf1b3,0xf784,0xf783,0xf2db,0xf538,0xf085,0xf144,0xf06a"
+      }
+    ]
+  }
+]
