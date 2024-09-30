@@ -73,7 +73,7 @@ static T clamp(T value, T min, T max) {
 
 #ifdef LV_SIMULATOR
 
-#define ESP_LOGE(...)
+#define ESP_LOGE(tag, format, ...) printf("[%s] " format, tag, __VA_ARGS__)
 
 #else
 
