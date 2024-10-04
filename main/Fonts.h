@@ -21,13 +21,13 @@ static constexpr auto NORMAL_FONT = &lv_font_medium_46;
 extern "C" {
 // Use the script in the tools folder to update the fonts.
 
-LV_FONT_DECLARE(lv_font_regular_48);
+LV_FONT_DECLARE(lv_font_regular_44);
 LV_FONT_DECLARE(lv_font_regular_56);
 LV_FONT_DECLARE(lv_font_medium_56);
 LV_FONT_DECLARE(lv_font_medium_92);
 }
 
-static constexpr auto XSMALL_FONT = &lv_font_regular_48;
+static constexpr auto XSMALL_FONT = &lv_font_regular_44;
 static constexpr auto SMALL_FONT = &lv_font_regular_56;
 static constexpr auto SMALL_MEDIUM_FONT = &lv_font_medium_56;
 static constexpr auto NORMAL_FONT = &lv_font_medium_92;

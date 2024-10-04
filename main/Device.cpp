@@ -47,12 +47,10 @@ void Device::flush_cb(lv_disp_drv_t* disp_drv, const lv_area_t* area, lv_color_t
 
     for (lv_coord_t y = 0; y < height; y++) {
         for (lv_coord_t x = width - 2; x >= 0; x -= 2) {
-            const auto b1 = color_p[y * width + x].ch.red;
-            const auto b2 = color_p[y * width + x + 1].ch.red;
+            const auto b1 = convert_3bpp_to_4bpp(color_p[y * width + x].ch.red);
+            const auto b2 = convert_3bpp_to_4bpp(color_p[y * width + x + 1].ch.red);
 
-            const auto b = b1 << 1 | b2 << 5;
-
-            buffer[buffer_offset++] = b;
+            buffer[buffer_offset++] = b1 | b2 << 4;
 
             if (buffer_offset >= buffer_len) {
                 _display.load_image_flush_buffer(buffer_offset);
@@ -82,6 +80,8 @@ void Device::flush_cb(lv_disp_drv_t* disp_drv, const lv_area_t* area, lv_color_t
 
     lv_disp_flush_ready(disp_drv);
 }
+
+uint8_t Device::convert_3bpp_to_4bpp(uint8_t value) { return (value & 0b111) << 1 | (value & 1); }
 
 bool Device::begin() {
     _display.setup(-1.15f);

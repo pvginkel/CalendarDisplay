@@ -1,11 +1,25 @@
 [
   {
     "name": "lv_font_regular_{size}",
-    "size": [56, 48, 28, 24],
+    "size": [56, 28],
     "fonts": [
       {
         "file": "Roboto-Regular.ttf",
         "range": "0x20-0x7F,0xB0,0x2022"
+      }
+    ]
+  },
+  {
+    "name": "lv_font_regular_{size}",
+    "size": [44, 24],
+    "fonts": [
+      {
+        "file": "Roboto-Regular.ttf",
+        "range": "0x20-0x7F,0xB0,0x2022"
+      },
+      {
+        "file": "seguiemj.ttf",
+        "range": "0x1F389"
       }
     ]
   },

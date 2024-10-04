@@ -245,6 +245,7 @@ void CalendarUI::create_event(lv_obj_t* parent, const CalendarEventDto& value) {
     lv_obj_set_style_text_font(summary_label, XSMALL_FONT, LV_PART_MAIN);
     lv_obj_set_style_pad_hor(summary_label, lv_dpx(10), LV_PART_MAIN);
     lv_obj_set_style_pad_top(summary_label, lv_dpx(6), LV_PART_MAIN);
+    lv_obj_set_style_pad_bottom(summary_label, lv_dpx(3), LV_PART_MAIN);
     lv_obj_set_size(summary_label, LV_PCT(100), LV_SIZE_CONTENT);
 
     if (value.start.has_time) {
@@ -271,6 +272,9 @@ void CalendarUI::create_event(lv_obj_t* parent, const CalendarEventDto& value) {
             lv_obj_set_style_pad_hor(time_label, lv_dpx(10), LV_PART_MAIN);
             lv_obj_set_style_pad_bottom(time_label, lv_dpx(3), LV_PART_MAIN);
             lv_obj_set_size(time_label, LV_PCT(100), LV_SIZE_CONTENT);
+
+            // Reset the bottom padding of the summary label.
+            lv_obj_set_style_pad_bottom(summary_label, 0, LV_PART_MAIN);
         }
     }
 }

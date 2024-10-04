@@ -447,7 +447,19 @@ void IT8951::clear_screen() {
         .h = _height,
     };
 
-    display_area(area, 0, IT8951_PIXEL_FORMAT_4BPP, IT8951_DISPLAY_MODE_INIT);
+    load_image_start(area, _memory_address, IT8951_ROTATE_0, IT8951_PIXEL_FORMAT_1BPP);
+
+    memset(_buffer, 0xff, _buffer_len);
+
+    auto write = _width / 8 * _height;
+
+    for (size_t offset = 0; offset < write; offset += _buffer_len) {
+        load_image_flush_buffer(min(_buffer_len, write - offset));
+    }
+
+    load_image_end();
+
+    display_area(area, _memory_address, IT8951_PIXEL_FORMAT_1BPP, IT8951_DISPLAY_MODE_INIT);
 }
 
 void IT8951::load_image_start(IT8951Area& area, uint32_t target_memory_address, it8951_rotate_t rotate,
