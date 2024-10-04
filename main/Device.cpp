@@ -6,13 +6,6 @@
 
 #define LVGL_TICK_PERIOD_MS 2
 
-#define PIN_HRDY 8
-#define PIN_RST 9
-#define PIN_CS 10
-#define PIN_SCLK 12
-#define PIN_MISO 13
-#define PIN_MOSI 11
-
 LOG_TAG(Device);
 
 void Device::process() {
@@ -30,25 +23,23 @@ void Device::flush_cb(lv_disp_drv_t* disp_drv, const lv_area_t* area, lv_color_t
 
     ESP_LOGD(TAG, "Updating display %dx%d %dx%d", area->x1, area->y1, area->x2, area->y2);
 
+    const uint16_t display_width = (area->x2 - area->x1) + 1;
+    const uint16_t display_height = disp_drv->hor_res;
+
     if (!_flushing) {
         _flushing = true;
 
-        _frame = {
-            .area{
-                .x = 0,
-                .y = 0,
-                .w = _display.get_width(),
-                .h = _display.get_height(),
-            },
-            .target_memory_address = _display.get_memory_address(),
-            .bpp = 4,
-            .hold = true,
+        IT8951Area area = {
+            .x = 0,
+            .y = 0,
+            .w = display_width,
+            .h = display_height,
         };
 
-        _display.update_start(_frame);
+        _display.load_image_start(area, _display.get_memory_address(), IT8951_ROTATE_90, IT8951_PIXEL_FORMAT_4BPP);
     }
 
-    const auto width = _display.get_width();
+    const auto width = display_width;
     const auto height = (area->y2 - area->y1) + 1;
     const auto buffer = _display.get_buffer();
     const auto buffer_len = _display.get_buffer_len();
@@ -64,18 +55,27 @@ void Device::flush_cb(lv_disp_drv_t* disp_drv, const lv_area_t* area, lv_color_t
             buffer[buffer_offset++] = b;
 
             if (buffer_offset >= buffer_len) {
-                _display.update_write_buffer(buffer_offset);
+                _display.load_image_flush_buffer(buffer_offset);
                 buffer_offset = 0;
             }
         }
     }
 
     if (buffer_offset > 0) {
-        _display.update_write_buffer(buffer_offset);
+        _display.load_image_flush_buffer(buffer_offset);
     }
 
     if (lv_disp_flush_is_last(disp_drv)) {
-        _display.update_end(_frame);
+        _display.load_image_end();
+
+        IT8951Area area = {
+            .x = 0,
+            .y = 0,
+            .w = display_height,
+            .h = display_width,
+        };
+
+        _display.display_area(area, _display.get_memory_address(), IT8951_PIXEL_FORMAT_4BPP, IT8951_DISPLAY_MODE_GC16);
 
         _flushing = false;
     }
@@ -84,14 +84,9 @@ void Device::flush_cb(lv_disp_drv_t* disp_drv, const lv_area_t* area, lv_color_t
 }
 
 bool Device::begin() {
-    _display.set_cs_pin(new GPIOPin(PIN_CS, GPIO_MODE_OUTPUT));
-    _display.set_sclk_pin(new GPIOPin(PIN_SCLK, GPIO_MODE_OUTPUT));
-    _display.set_miso_pin(new GPIOPin(PIN_MISO, GPIO_MODE_INPUT));
-    _display.set_mosi_pin(new GPIOPin(PIN_MOSI, GPIO_MODE_OUTPUT));
-    _display.set_busy_pin(new GPIOPin(PIN_HRDY, GPIO_MODE_INPUT, true /* inverted */));
-    _display.set_reset_pin(new GPIOPin(PIN_RST, GPIO_MODE_OUTPUT));
-
     _display.setup(-1.15f);
+
+    _display.clear_screen();
 
     lv_init();
 
@@ -141,6 +136,7 @@ bool Device::begin() {
 
     disp_drv.full_refresh = 1;
     disp_drv.dpi = LV_DPI_DEF;
+    disp_drv.rotated = LV_DISP_ROT_90;
 
     lv_disp_drv_register(&disp_drv);
 

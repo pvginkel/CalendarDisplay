@@ -1,6 +1,6 @@
 #pragma once
 
-#include "waveshare_it8951.h"
+#include "it8951.h"
 
 class Device {
 public:
@@ -12,7 +12,6 @@ public:
 private:
     void flush_cb(lv_disp_drv_t* disp_drv, const lv_area_t* area, lv_color_t* color_p);
 
-    WaveshareIT8951 _display{};
-    WaveshareIT8951Frame _frame{};
+    IT8951 _display{};
     bool _flushing{false};
 };

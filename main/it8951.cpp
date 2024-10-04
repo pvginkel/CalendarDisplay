@@ -1,13 +1,13 @@
 #include "includes.h"
 
-#include "waveshare_it8951.h"
+#include "it8951.h"
 
-LOG_TAG(WaveshareIT8951);
+LOG_TAG(IT8951);
 
 #define _WS_CONCAT3(x, y, z) x##y##z
 #define WS_CONCAT3(x, y, z) _WS_CONCAT3(x, y, z)
 
-#define SPI_HOST WS_CONCAT3(SPI, CONFIG_DEVICE_SPI_CONTROLLER, _HOST)
+#define SPI_HOST WS_CONCAT3(SPI, CONFIG_IT8951_SPI_HOST, _HOST)
 
 // INIT mode, for every init or some time after A2 mode refresh
 #define IT8951_MODE_INIT 0
@@ -40,14 +40,8 @@ LOG_TAG(WaveshareIT8951);
 #define BACK_GRAY_VALUE 0x00
 
 /*-----------------------------------------------------------------------
- IT8951 Mode defines
+ IT8951 mode defines
 ------------------------------------------------------------------------*/
-
-// Rotate mode
-#define IT8951_ROTATE_0 0
-#define IT8951_ROTATE_90 1
-#define IT8951_ROTATE_180 2
-#define IT8951_ROTATE_270 3
 
 // Pixel mode (Bit per Pixel)
 #define IT8951_2BPP 0
@@ -91,51 +85,63 @@ IT8951 Registers defines
 #define MCSR (MCSR_BASE_ADDR + 0x0000)
 #define LISAR (MCSR_BASE_ADDR + 0x0008)
 
-bool WaveshareIT8951::setup(float vcom) {
+bool IT8951::setup(float vcom) {
     ESP_LOGI(TAG, "Initializing SPI");
 
-    ESP_ERROR_ASSERT(busy_pin_);
-    ESP_ERROR_ASSERT(reset_pin_);
-    ESP_ERROR_ASSERT(cs_pin_);
+    gpio_config_t i_conf = {
+        .pin_bit_mask = 1ull << CONFIG_IT8951_DISPLAY_READY_PIN,
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE,
+    };
 
-    busy_pin_->setup();
-    reset_pin_->setup();
-    cs_pin_->setup();
+    ESP_ERROR_CHECK(gpio_config(&i_conf));
+
+    i_conf = {
+        .pin_bit_mask = 1ull << CONFIG_IT8951_RESET_PIN | 1ull << CONFIG_IT8951_CS_PIN,
+        .mode = GPIO_MODE_OUTPUT,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE,
+    };
+
+    ESP_ERROR_CHECK(gpio_config(&i_conf));
 
     spi_setup();
 
     ESP_LOGI(TAG, "Initializing controller");
 
-    WaveshareIT8951DeviceInfo device_info;
+    DeviceInfo device_info;
     controller_setup(device_info, (uint16_t)(fabs(vcom) * 1000));
 
-    width_ = device_info.Panel_W;
-    height_ = device_info.Panel_H;
-    memory_address_ = device_info.Memory_Addr_L | (device_info.Memory_Addr_H << 16);
+    _width = device_info.width;
+    _height = device_info.height;
+    _memory_address = device_info.memory_address_low | (device_info.memory_address_heigh << 16);
 
-    auto lut_version = (char*)device_info.LUT_Version;
+    auto lut_version = (char*)device_info.lut_version;
     auto four_byte_align = false;
 
     if (strcmp(lut_version, "M641") == 0) {
         // 6inch e-Paper HAT(800,600), 6inch HD e-Paper HAT(1448,1072), 6inch HD touch e-Paper HAT(1448,1072)
-        a2_mode_ = 4;
+        _a2_mode = 4;
         four_byte_align = true;
     } else if (strcmp(lut_version, "M841_TFAB512") == 0) {
         // Another firmware version for 6inch HD e-Paper HAT(1448,1072), 6inch HD touch e-Paper HAT(1448,1072)
-        a2_mode_ = 6;
+        _a2_mode = 6;
         four_byte_align = true;
     } else if (strcmp(lut_version, "M841") == 0) {
         // 9.7inch e-Paper HAT(1200,825)
-        a2_mode_ = 6;
+        _a2_mode = 6;
     } else if (strcmp(lut_version, "M841_TFA2812") == 0) {
         // 7.8inch e-Paper HAT(1872,1404)
-        a2_mode_ = 6;
+        _a2_mode = 6;
     } else if (strcmp(lut_version, "M841_TFA5210") == 0) {
         // 10.3inch e-Paper HAT(1872,1404)
-        a2_mode_ = 6;
+        _a2_mode = 6;
     } else {
-        // default set to 6 as A2 Mode
-        a2_mode_ = 6;
+        // default set to 6 as A2 mode
+        _a2_mode = 6;
     }
 
     if (four_byte_align) {
@@ -146,15 +152,11 @@ bool WaveshareIT8951::setup(float vcom) {
     return true;
 }
 
-void WaveshareIT8951::spi_setup() {
-    ESP_ERROR_ASSERT(mosi_pin_);
-    ESP_ERROR_ASSERT(miso_pin_);
-    ESP_ERROR_ASSERT(sclk_pin_);
-
+void IT8951::spi_setup() {
     spi_bus_config_t bus_config = {
-        .mosi_io_num = mosi_pin_->get_pin(),
-        .miso_io_num = miso_pin_->get_pin(),
-        .sclk_io_num = sclk_pin_->get_pin(),
+        .mosi_io_num = CONFIG_IT8951_MOSI_PIN,
+        .miso_io_num = CONFIG_IT8951_MISO_PIN,
+        .sclk_io_num = CONFIG_IT8951_SCLK_PIN,
         .quadwp_io_num = -1,
         .quadhd_io_num = -1,
     };
@@ -164,16 +166,15 @@ void WaveshareIT8951::spi_setup() {
     ESP_ERROR_CHECK(spi_bus_initialize(SPI_HOST, &bus_config, SPI_DMA_DISABLED));
 
     spi_device_interface_config_t device_interface_config = {
-        // This seems to be the highest stable speed.
-        .clock_speed_hz = SPI_MASTER_FREQ_11M,
+        .clock_speed_hz = SPI_MASTER_FREQ_80M / CONFIG_IT8951_SPI_BUS_SPEED_DIVIDER,
         .spics_io_num = -1,
         .queue_size = 1,
     };
 
-    ESP_ERROR_CHECK(spi_bus_add_device(SPI_HOST, &device_interface_config, &spi_));
+    ESP_ERROR_CHECK(spi_bus_add_device(SPI_HOST, &device_interface_config, &_spi));
 
     int freq_khz;
-    ESP_ERROR_CHECK(spi_device_get_actual_freq(spi_, &freq_khz));
+    ESP_ERROR_CHECK(spi_device_get_actual_freq(_spi, &freq_khz));
     ESP_LOGI(TAG, "SPI device frequency %d KHz", freq_khz);
     ESP_ERROR_ASSERT(freq_khz * 1000 <= device_interface_config.clock_speed_hz);
 
@@ -182,46 +183,46 @@ void WaveshareIT8951::spi_setup() {
 
     ESP_LOGI(TAG, "Allocating %d bytes for xfer buffer", bus_max_transfer_sz);
 
-    buffer_len_ = bus_max_transfer_sz;
-    buffer_ = (uint8_t*)heap_caps_malloc(bus_max_transfer_sz, MALLOC_CAP_DMA);
-    ESP_ERROR_ASSERT(buffer_);
+    _buffer_len = bus_max_transfer_sz;
+    _buffer = (uint8_t*)heap_caps_malloc(bus_max_transfer_sz, MALLOC_CAP_DMA);
+    ESP_ERROR_ASSERT(_buffer);
 
     gpio_dump_io_configuration(stdout, (1ull << 11) | (1ull << 12) | (1ull << 13) | (1ull << 10));
 }
 
-void WaveshareIT8951::transaction_start() { cs_pin_->digital_write(false); }
+void IT8951::transaction_start() { gpio_set_level((gpio_num_t)CONFIG_IT8951_CS_PIN, 0); }
 
-void WaveshareIT8951::transaction_end() { cs_pin_->digital_write(true); }
+void IT8951::transaction_end() { gpio_set_level((gpio_num_t)CONFIG_IT8951_CS_PIN, 1); }
 
-uint8_t WaveshareIT8951::read_byte() {
+uint8_t IT8951::read_byte() {
     spi_transaction_t t = {
         .flags = SPI_TRANS_USE_RXDATA,
         .length = 8,
     };
 
-    ESP_ERROR_CHECK(spi_device_transmit(spi_, &t));
+    ESP_ERROR_CHECK(spi_device_transmit(_spi, &t));
 
     return t.rx_data[0];
 }
 
-uint16_t WaveshareIT8951::read_word() {
+uint16_t IT8951::read_word() {
     spi_transaction_t t = {
         .flags = SPI_TRANS_USE_RXDATA,
         .length = 16,
     };
 
-    ESP_ERROR_CHECK(spi_device_transmit(spi_, &t));
+    ESP_ERROR_CHECK(spi_device_transmit(_spi, &t));
 
     return (uint16_t)t.rx_data[0] << 8 | t.rx_data[1];
 }
 
-void WaveshareIT8951::read_array(uint8_t* data, size_t len, bool swap) {
+void IT8951::read_array(uint8_t* data, size_t len, bool swap) {
     spi_transaction_t t = {
         .length = 8 * len,
         .rx_buffer = data,
     };
 
-    ESP_ERROR_CHECK(spi_device_transmit(spi_, &t));
+    ESP_ERROR_CHECK(spi_device_transmit(_spi, &t));
 
     if (swap) {
         for (size_t i = 0; i < len; i += 2) {
@@ -232,27 +233,27 @@ void WaveshareIT8951::read_array(uint8_t* data, size_t len, bool swap) {
     }
 }
 
-void WaveshareIT8951::write_byte(uint8_t value) {
+void IT8951::write_byte(uint8_t value) {
     spi_transaction_t t = {
         .flags = SPI_TRANS_USE_TXDATA,
         .length = 8,
         .tx_data = {value},
     };
 
-    ESP_ERROR_CHECK(spi_device_transmit(spi_, &t));
+    ESP_ERROR_CHECK(spi_device_transmit(_spi, &t));
 }
 
-void WaveshareIT8951::write_word(uint16_t value) {
+void IT8951::write_word(uint16_t value) {
     spi_transaction_t t = {
         .flags = SPI_TRANS_USE_TXDATA,
         .length = 16,
         .tx_data = {(uint8_t)(value >> 8), (uint8_t)(value)},
     };
 
-    ESP_ERROR_CHECK(spi_device_transmit(spi_, &t));
+    ESP_ERROR_CHECK(spi_device_transmit(_spi, &t));
 }
 
-void WaveshareIT8951::write_array(uint8_t* data, size_t len, bool swap) {
+void IT8951::write_array(uint8_t* data, size_t len, bool swap) {
     spi_transaction_t t = {
         .length = 8 * len,
         .tx_buffer = data,
@@ -266,27 +267,27 @@ void WaveshareIT8951::write_array(uint8_t* data, size_t len, bool swap) {
         }
     }
 
-    ESP_ERROR_CHECK(spi_device_transmit(spi_, &t));
+    ESP_ERROR_CHECK(spi_device_transmit(_spi, &t));
 }
 
-void WaveshareIT8951::delay(int ms) { vTaskDelay(pdMS_TO_TICKS(ms)); }
+void IT8951::delay(int ms) { vTaskDelay(pdMS_TO_TICKS(ms)); }
 
-uint32_t WaveshareIT8951::millis() { return esp_timer_get_time() / 1000; }
+uint32_t IT8951::millis() { return esp_timer_get_time() / 1000; }
 
-void WaveshareIT8951::wait_until_idle() {
-    if (!this->busy_pin_->digital_read()) {
+void IT8951::wait_until_idle() {
+    if (gpio_get_level((gpio_num_t)CONFIG_IT8951_DISPLAY_READY_PIN)) {
         return;
     }
 
     const uint32_t start = millis();
-    while (this->busy_pin_->digital_read()) {
+    while (!gpio_get_level((gpio_num_t)CONFIG_IT8951_DISPLAY_READY_PIN)) {
         ESP_ERROR_ASSERT(millis() - start < this->idle_timeout());
 
         delay(20);
     }
 }
 
-uint16_t WaveshareIT8951::read_data() {
+uint16_t IT8951::read_data() {
     transaction_start();
 
     wait_until_idle();
@@ -301,7 +302,7 @@ uint16_t WaveshareIT8951::read_data() {
     return result;
 }
 
-void WaveshareIT8951::read_data(uint8_t* data, size_t len) {
+void IT8951::read_data(uint8_t* data, size_t len) {
     transaction_start();
 
     wait_until_idle();
@@ -314,7 +315,7 @@ void WaveshareIT8951::read_data(uint8_t* data, size_t len) {
     transaction_end();
 }
 
-void WaveshareIT8951::write_command(uint16_t command) {
+void IT8951::write_command(uint16_t command) {
     transaction_start();
 
     wait_until_idle();
@@ -325,7 +326,7 @@ void WaveshareIT8951::write_command(uint16_t command) {
     transaction_end();
 }
 
-void WaveshareIT8951::write_data(uint16_t data) {
+void IT8951::write_data(uint16_t data) {
     transaction_start();
 
     wait_until_idle();
@@ -336,7 +337,7 @@ void WaveshareIT8951::write_data(uint16_t data) {
     transaction_end();
 }
 
-void WaveshareIT8951::write_data(uint8_t* data, size_t len) {
+void IT8951::write_data(uint8_t* data, size_t len) {
     transaction_start();
 
     wait_until_idle();
@@ -347,7 +348,7 @@ void WaveshareIT8951::write_data(uint8_t* data, size_t len) {
     transaction_end();
 }
 
-uint16_t WaveshareIT8951::read_reg(uint16_t reg) {
+uint16_t IT8951::read_reg(uint16_t reg) {
     transaction_start();
 
     write_command(IT8951_TCON_REG_RD);
@@ -359,7 +360,7 @@ uint16_t WaveshareIT8951::read_reg(uint16_t reg) {
     return result;
 }
 
-void WaveshareIT8951::write_reg(uint16_t reg, uint16_t value) {
+void IT8951::write_reg(uint16_t reg, uint16_t value) {
     transaction_start();
 
     write_command(IT8951_TCON_REG_WR);
@@ -369,7 +370,7 @@ void WaveshareIT8951::write_reg(uint16_t reg, uint16_t value) {
     transaction_end();
 }
 
-void WaveshareIT8951::enable_enhance_driving_capability() {
+void IT8951::enable_enhance_driving_capability() {
     auto value = read_reg(0x0038);
 
     ESP_LOGD(TAG, "The reg value before writing is %x", value);
@@ -381,138 +382,114 @@ void WaveshareIT8951::enable_enhance_driving_capability() {
     ESP_LOGD(TAG, "The reg value after writing is %x", value);
 }
 
-void WaveshareIT8951::system_run() { write_command(IT8951_TCON_SYS_RUN); }
+void IT8951::set_system_run() { write_command(IT8951_TCON_SYS_RUN); }
 
-void WaveshareIT8951::standby() { write_command(IT8951_TCON_STANDBY); }
+void IT8951::set_standby() { write_command(IT8951_TCON_STANDBY); }
 
-void WaveshareIT8951::sleep() { write_command(IT8951_TCON_SLEEP); }
+void IT8951::set_sleep() { write_command(IT8951_TCON_SLEEP); }
 
-void WaveshareIT8951::reset() {
-    reset_pin_->digital_write(true);
+void IT8951::reset() {
+    gpio_set_level((gpio_num_t)CONFIG_IT8951_RESET_PIN, 1);
     delay(200);
-    reset_pin_->digital_write(false);
+    gpio_set_level((gpio_num_t)CONFIG_IT8951_RESET_PIN, 0);
     delay(10);
-    reset_pin_->digital_write(true);
+    gpio_set_level((gpio_num_t)CONFIG_IT8951_RESET_PIN, 1);
     delay(200);
 }
 
-void WaveshareIT8951::get_system_info(WaveshareIT8951DeviceInfo& Dev_Info) {
+void IT8951::get_system_info(DeviceInfo& device_info) {
     write_command(USDEF_I80_CMD_GET_DEV_INFO);
 
-    read_data((uint8_t*)&Dev_Info, sizeof(WaveshareIT8951DeviceInfo));
+    read_data((uint8_t*)&device_info, sizeof(DeviceInfo));
 
-    ESP_LOGI(TAG, "Panel(W,H) = (%d,%d)", Dev_Info.Panel_W, Dev_Info.Panel_H);
-    ESP_LOGI(TAG, "Memory Address = %X", Dev_Info.Memory_Addr_L | (Dev_Info.Memory_Addr_H << 16));
-    ESP_LOGI(TAG, "FW Version = %s", (uint8_t*)Dev_Info.FW_Version);
-    ESP_LOGI(TAG, "LUT Version = %s", (uint8_t*)Dev_Info.LUT_Version);
+    ESP_LOGI(TAG, "Panel(W,H) = (%d,%d)", device_info.width, device_info.height);
+    ESP_LOGI(TAG, "Memory Address = %X", device_info.memory_address_low | (device_info.memory_address_heigh << 16));
+    ESP_LOGI(TAG, "FW Version = %s", (uint8_t*)device_info.firmware_version);
+    ESP_LOGI(TAG, "LUT Version = %s", (uint8_t*)device_info.lut_version);
 }
 
-uint16_t WaveshareIT8951::get_vcom() {
+uint16_t IT8951::get_vcom() {
     write_command(USDEF_I80_CMD_VCOM);
     write_data(0x0000);
     return read_data();
 }
 
-void WaveshareIT8951::set_vcom(uint16_t VCOM) {
+void IT8951::set_vcom(uint16_t vcom) {
     write_command(USDEF_I80_CMD_VCOM);
     write_data(0x0001);
-    write_data(VCOM);
+    write_data(vcom);
 }
 
-void WaveshareIT8951::controller_setup(WaveshareIT8951DeviceInfo& Dev_Info, uint16_t VCOM) {
+void IT8951::controller_setup(DeviceInfo& device_info, uint16_t vcom) {
     transaction_end();
 
     reset();
 
-    system_run();
+    set_system_run();
 
-    get_system_info(Dev_Info);
+    get_system_info(device_info);
 
     // Enable Pack write
     write_reg(I80CPCR, 0x0001);
 
     // Set VCOM by handle
-    if (VCOM != get_vcom()) {
-        set_vcom(VCOM);
-        ESP_LOGI(TAG, "VCOM = -%.02fV\n", (float)get_vcom() / 1000);
+    if (vcom != get_vcom()) {
+        set_vcom(vcom);
+        ESP_LOGI(TAG, "vcom = -%.02fV\n", (float)get_vcom() / 1000);
     }
 }
 
-void WaveshareIT8951::clear_screen(WaveshareIT8951DeviceInfo& Dev_Info, uint32_t Target_Memory_Addr, uint16_t Mode) {
-    WaveshareIT8951Frame frame = {
-        .area =
-            {
-                .x = 0,
-                .y = 0,
-                .w = Dev_Info.Panel_W,
-                .h = Dev_Info.Panel_H,
-            },
-        .target_memory_address = Target_Memory_Addr,
-        .bpp = 4,
-        .hold = true,
+void IT8951::clear_screen() {
+    IT8951Area area = {
+        .x = 0,
+        .y = 0,
+        .w = _width,
+        .h = _height,
     };
 
-    update_start(frame);
-
-    memset(buffer_, 0xff, buffer_len_);
-
-    size_t write = frame.area.w / 2 * frame.area.h;
-    for (size_t offset = 0; offset < write; offset += buffer_len_) {
-        update_write_buffer(min(buffer_len_, offset));
-    }
-
-    update_end(frame);
+    display_area(area, 0, IT8951_PIXEL_FORMAT_4BPP, IT8951_DISPLAY_MODE_INIT);
 }
 
-void WaveshareIT8951::update_start(WaveshareIT8951Frame& frame) {
-    write_frame_start(frame.area, frame.target_memory_address, frame.bpp);
-}
-
-void WaveshareIT8951::update_write_buffer(size_t len) { write_frame_buffer(len); }
-
-void WaveshareIT8951::update_end(WaveshareIT8951Frame& frame) {
-    write_frame_end();
-    display_frame(frame.area, frame.target_memory_address, frame.hold, frame.bpp);
-}
-
-void WaveshareIT8951::write_frame_start(WaveshareIT8951Area& area, uint32_t Target_Memory_Addr, int bpp) {
-    LoadImageInfo Load_Img_Info;
-
+void IT8951::load_image_start(IT8951Area& area, uint32_t target_memory_address, it8951_rotate_t rotate,
+                              it8951_pixel_format_t pixel_format) {
     wait_display_ready();
 
-    Load_Img_Info.Endian_Type = IT8951_LDIMG_B_ENDIAN;
+    uint16_t pixel_format_value;
 
-    switch (bpp) {
-        case 1:
-        case 8:
-            Load_Img_Info.Pixel_Format = IT8951_8BPP;
+    switch (pixel_format) {
+        case IT8951_PIXEL_FORMAT_1BPP:
+        case IT8951_PIXEL_FORMAT_8BPP:
+            pixel_format_value = IT8951_8BPP;
             break;
-        case 2:
-            Load_Img_Info.Pixel_Format = IT8951_2BPP;
+        case IT8951_PIXEL_FORMAT_2BPP:
+            pixel_format_value = IT8951_2BPP;
             break;
-        case 3:
-            Load_Img_Info.Pixel_Format = IT8951_3BPP;
-            break;
-        case 4:
-            Load_Img_Info.Pixel_Format = IT8951_4BPP;
+        case IT8951_PIXEL_FORMAT_4BPP:
+            pixel_format_value = IT8951_4BPP;
             break;
         default:
             assert(false);
             break;
     }
 
-    Load_Img_Info.Rotate = IT8951_ROTATE_0;
+    set_target_memory_address(target_memory_address);
 
-    set_target_memory_address(Target_Memory_Addr);
+    auto x = area.x;
+    auto w = area.w;
 
-    auto load_image_area = area;
-
-    if (bpp == 1) {
-        load_image_area.x /= 8;
-        load_image_area.w /= 8;
+    if (pixel_format == IT8951_PIXEL_FORMAT_1BPP) {
+        x /= 8;
+        w /= 8;
     }
 
-    load_image_area_start(&Load_Img_Info, load_image_area);
+    // Send image load area start command.
+
+    write_command(IT8951_TCON_LD_IMG_AREA);
+    write_data((IT8951_LDIMG_B_ENDIAN << 8 | pixel_format_value << 4 | (uint16_t)rotate));
+    write_data(x);
+    write_data(area.y);
+    write_data(w);
+    write_data(area.h);
 
     // This is the start of the write_data method. The data itself
     // will be written in chunks.
@@ -524,85 +501,65 @@ void WaveshareIT8951::write_frame_start(WaveshareIT8951Area& area, uint32_t Targ
     wait_until_idle();
 }
 
-void WaveshareIT8951::write_frame_buffer(size_t len) {
-    ESP_ERROR_ASSERT(len <= buffer_len_);
+void IT8951::load_image_flush_buffer(size_t len) {
+    ESP_ERROR_ASSERT(len <= _buffer_len);
 
     // We don't have to swap the bytes of the words in the array
     // because we've set the endian type.
-    write_array(buffer_, len, false);
+    write_array(_buffer, len, false /* swap */);
 }
 
-void WaveshareIT8951::write_frame_end() {
-    // This is the end of the write_data method.
-
+void IT8951::load_image_end() {  // This is the end of the write_data method.
     transaction_end();
 
-    load_image_end();
+    write_command(IT8951_TCON_LD_IMG_END);
 }
 
-void WaveshareIT8951::display_frame(WaveshareIT8951Area& area, bool Hold, uint32_t Target_Memory_Addr, int bpp) {
+void IT8951::display_area(IT8951Area& area, uint32_t target_memory_address, it8951_pixel_format_t pixel_format,
+                          it8951_display_mode_t mode) {
     wait_display_ready();
 
-    if (bpp == 1) {
+    if (pixel_format == IT8951_PIXEL_FORMAT_1BPP) {
         // Set Display mode to 1 bpp mode - Set 0x18001138 Bit[18](0x1800113A Bit[2])to 1
 
         write_reg(UP1SR + 2, read_reg(UP1SR + 2) | (1 << 2));
         write_reg(BGVR, (FRONT_GRAY_VALUE << 8) | BACK_GRAY_VALUE);
     }
 
-    if (Hold == true) {
-        display_area(area, bpp == 1 ? a2_mode_ : IT8951_MODE_GC16);
+    if (target_memory_address) {
+        write_command(USDEF_I80_CMD_DPY_AREA);
+        write_data(area.x);
+        write_data(area.y);
+        write_data(area.w);
+        write_data(area.h);
+        write_data(get_mode_value(mode));
     } else {
-        display_area_buffer(area, bpp == 1 ? a2_mode_ : IT8951_MODE_GC16, Target_Memory_Addr);
+        write_command(USDEF_I80_CMD_DPY_BUF_AREA);
+        write_data(area.x);
+        write_data(area.y);
+        write_data(area.w);
+        write_data(area.h);
+        write_data(get_mode_value(mode));
+        write_data(target_memory_address);
+        write_data(target_memory_address >> 16);
     }
 
-    if (bpp == 1) {
+    if (pixel_format == IT8951_PIXEL_FORMAT_1BPP) {
         wait_display_ready();
 
         write_reg(UP1SR + 2, read_reg(UP1SR + 2) & ~(1 << 2));
     }
 }
 
-void WaveshareIT8951::display_area(WaveshareIT8951Area& area, uint16_t Mode) {
-    write_command(USDEF_I80_CMD_DPY_AREA);
-    write_data(area.x);
-    write_data(area.y);
-    write_data(area.w);
-    write_data(area.h);
-    write_data(Mode);
-}
-
-void WaveshareIT8951::display_area_buffer(WaveshareIT8951Area& area, uint16_t Mode, uint32_t Target_Memory_Addr) {
-    write_command(USDEF_I80_CMD_DPY_BUF_AREA);
-    write_data(area.x);
-    write_data(area.y);
-    write_data(area.w);
-    write_data(area.h);
-    write_data(Mode);
-    write_data(Target_Memory_Addr);
-    write_data(Target_Memory_Addr >> 16);
-}
-
-void WaveshareIT8951::set_target_memory_address(uint32_t Target_Memory_Addr) {
-    uint16_t WordH = (uint16_t)((Target_Memory_Addr >> 16) & 0x0000FFFF);
-    uint16_t WordL = (uint16_t)(Target_Memory_Addr & 0x0000FFFF);
+void IT8951::set_target_memory_address(uint32_t target_memory_address) {
+    uint16_t WordH = (uint16_t)((target_memory_address >> 16) & 0x0000FFFF);
+    uint16_t WordL = (uint16_t)(target_memory_address & 0x0000FFFF);
 
     write_reg(LISAR + 2, WordH);
     write_reg(LISAR, WordL);
 }
 
-void WaveshareIT8951::load_image_area_start(LoadImageInfo* Load_Img_Info, WaveshareIT8951Area& area) {
-    write_command(IT8951_TCON_LD_IMG_AREA);
-    write_data((Load_Img_Info->Endian_Type << 8 | Load_Img_Info->Pixel_Format << 4 | Load_Img_Info->Rotate));
-    write_data(area.x);
-    write_data(area.y);
-    write_data(area.w);
-    write_data(area.h);
-}
-
-void WaveshareIT8951::load_image_end() { write_command(IT8951_TCON_LD_IMG_END); }
-
-void WaveshareIT8951::wait_display_ready() {
+void IT8951::wait_display_ready() {
     const uint32_t start = millis();
 
     while (true) {
@@ -616,5 +573,16 @@ void WaveshareIT8951::wait_display_ready() {
             return;
         }
         delay(20);
+    }
+}
+
+uint16_t IT8951::get_mode_value(it8951_display_mode_t mode) {
+    switch (mode) {
+        case IT8951_DISPLAY_MODE_INIT:
+            return IT8951_MODE_INIT;
+        case IT8951_DISPLAY_MODE_A2:
+            return _a2_mode;
+        default:
+            return IT8951_MODE_GC16;
     }
 }
