@@ -16,16 +16,16 @@ menu "Device Configuration"
         int "Timeout after which the device restarts when on the error screen in seconds"
         default 300
 
-    config INFRA_STATISTICS_ENDPOINT
-        string "Infra statistics endpoint"
+    config CALENDAR_ENDPOINT
+        string "Calendar endpoint"
 
-    config INFRA_STATISTICS_ENDPOINT_RECV_TIMEOUT
-        int "Infra statistics endpoint receive timeout in ms"
+    config CALENDAR_ENDPOINT_RECV_TIMEOUT
+        int "Calendar endpoint receive timeout in ms"
         default 30000
 
-    config INFRA_STATISTICS_UPDATE_INTERVAL
-        int "Update interval of the statistics in seconds"
-        default 1800
+    config CALENDAR_UPDATE_INTERVAL
+        int "Update interval of the calendar in seconds"
+        default 300
 
 endmenu
 

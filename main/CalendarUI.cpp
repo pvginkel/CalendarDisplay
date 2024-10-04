@@ -30,9 +30,8 @@ void CalendarUI::do_update() {
             // Calculate the number of seconds from the current time to
             // the next update interval.
             auto diff = current_time - start_hour_time;
-            auto rounded_up =
-                ((diff + CONFIG_INFRA_STATISTICS_UPDATE_INTERVAL - 1) / CONFIG_INFRA_STATISTICS_UPDATE_INTERVAL) *
-                CONFIG_INFRA_STATISTICS_UPDATE_INTERVAL;
+            auto rounded_up = ((diff + CONFIG_CALENDAR_UPDATE_INTERVAL - 1) / CONFIG_CALENDAR_UPDATE_INTERVAL) *
+                              CONFIG_CALENDAR_UPDATE_INTERVAL;
 
             // Set the next update to the correct time. After the initial
             // calculation, every other update will be calculated simply
@@ -43,7 +42,7 @@ void CalendarUI::do_update() {
             // The update completes in roughly 15 seconds.
             _next_update -= 10;
         } else {
-            _next_update += CONFIG_INFRA_STATISTICS_UPDATE_INTERVAL;
+            _next_update += CONFIG_CALENDAR_UPDATE_INTERVAL;
         }
 
         update_data();
@@ -52,16 +51,16 @@ void CalendarUI::do_update() {
 
 void CalendarUI::update_data() {
     esp_http_client_config_t config = {
-        .url = CONFIG_INFRA_STATISTICS_ENDPOINT,
-        .timeout_ms = CONFIG_INFRA_STATISTICS_ENDPOINT_RECV_TIMEOUT,
+        .url = CONFIG_CALENDAR_ENDPOINT,
+        .timeout_ms = CONFIG_CALENDAR_ENDPOINT_RECV_TIMEOUT,
     };
 
-    ESP_LOGI(TAG, "Downloading statistics from %s", config.url);
+    ESP_LOGI(TAG, "Downloading calendar from %s", config.url);
 
     string json;
     auto err = esp_http_download_string(config, json, 128 * 1024);
     if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to download statistics");
+        ESP_LOGE(TAG, "Failed to download calendar");
         return;
     }
 

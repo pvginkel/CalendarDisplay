@@ -9,11 +9,11 @@ withCredentials([
         ])
     ]) {
         node(POD_LABEL) {
-            stage('Build infra statistics display') {
-                dir('InfraStatisticsDisplay') {
+            stage('Build calendar display') {
+                dir('CalendarDisplay') {
                     git branch: 'main',
                         credentialsId: '5f6fbd66-b41c-405f-b107-85ba6fd97f10',
-                        url: 'https://github.com/pvginkel/InfraStatisticsDisplay.git'
+                        url: 'https://github.com/pvginkel/CalendarDisplay.git'
                         
                     container('idf') {
                         // Necessary because the IDF container doesn't have support
@@ -25,17 +25,17 @@ withCredentials([
                 }
             }
             
-            stage('Deploy infra statistics display') {
+            stage('Deploy calendar display') {
                 dir('HelmCharts') {
                     git branch: 'main',
                         credentialsId: '5f6fbd66-b41c-405f-b107-85ba6fd97f10',
                         url: 'https://github.com/pvginkel/HelmCharts.git'
                 }
 
-                dir('InfraStatisticsDisplay') {
-                    sh 'cp build/esp32-infra-statistics-display.bin infra-statistics-display-ota.bin'
+                dir('CalendarDisplay') {
+                    sh 'cp build/esp32-calendar-display.bin calendar-display-ota.bin'
 
-                    sh 'scripts/upload.sh ../HelmCharts/assets/kubernetes-signing-key infra-statistics-display-ota.bin'
+                    sh 'scripts/upload.sh ../HelmCharts/assets/kubernetes-signing-key calendar-display-ota.bin'
                 }
             }
         }
