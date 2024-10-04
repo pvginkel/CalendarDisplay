@@ -18,10 +18,30 @@ void Device::process() {
     lv_timer_handler();
 }
 
+void Device::set_on(bool on) {
+    if (on == _on) {
+        return;
+    }
+
+    _on = on;
+
+    if (on) {
+        ESP_LOGI(TAG, "Turning screen on");
+
+        _display.set_system_run();
+    } else {
+        ESP_LOGI(TAG, "Turning screen off");
+
+        _display.set_sleep();
+    }
+}
+
 void Device::flush_cb(lv_disp_drv_t* disp_drv, const lv_area_t* area, lv_color_t* color_p) {
     ESP_ERROR_ASSERT(LV_COLOR_DEPTH == 8);
 
     ESP_LOGD(TAG, "Updating display %dx%d %dx%d", area->x1, area->y1, area->x2, area->y2);
+
+    set_on(true);
 
     const uint16_t display_width = (area->x2 - area->x1) + 1;
     const uint16_t display_height = disp_drv->hor_res;
@@ -63,7 +83,9 @@ void Device::flush_cb(lv_disp_drv_t* disp_drv, const lv_area_t* area, lv_color_t
         _display.load_image_flush_buffer(buffer_offset);
     }
 
-    if (lv_disp_flush_is_last(disp_drv)) {
+    auto is_last = lv_disp_flush_is_last(disp_drv);
+
+    if (is_last) {
         _display.load_image_end();
 
         IT8951Area area = {
@@ -79,6 +101,12 @@ void Device::flush_cb(lv_disp_drv_t* disp_drv, const lv_area_t* area, lv_color_t
     }
 
     lv_disp_flush_ready(disp_drv);
+
+    if (is_last && _standby_after_next_paint) {
+        _standby_after_next_paint = false;
+
+        set_on(false);
+    }
 }
 
 uint8_t Device::convert_3bpp_to_4bpp(uint8_t value) { return (value & 0b111) << 1 | (value & 1); }

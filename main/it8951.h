@@ -48,7 +48,6 @@ public:
     uint32_t get_memory_address() { return _memory_address; }
     void enable_enhance_driving_capability();
     void set_system_run();
-    void set_standby();
     void set_sleep();
     void clear_screen();
     void load_image_start(IT8951Area& area, uint32_t target_memory_address, it8951_rotate_t rotate,

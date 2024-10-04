@@ -37,10 +37,6 @@ void CalendarUI::do_update() {
             // calculation, every other update will be calculated simply
             // by adding the update interval.
             _next_update = start_hour_time + rounded_up;
-
-            // Subtract 10 seconds to better time the update on the interval.
-            // The update completes in roughly 15 seconds.
-            _next_update -= 10;
         } else {
             _next_update += CONFIG_CALENDAR_UPDATE_INTERVAL;
         }
@@ -64,12 +60,21 @@ void CalendarUI::update_data() {
         return;
     }
 
+    auto hash = calculate_hash(json.c_str());
+    if (hash == _last_hash) {
+        return;
+    }
+
+    _last_hash = hash;
+
     if (!CalendarEventsDto::from_json(json.c_str(), _data)) {
         ESP_LOGE(TAG, "Failed to parse JSON");
         return;
     }
 
     ESP_LOGI(TAG, "Updating screen");
+
+    _device->standby_after_next_paint();
 
     render();
 }
@@ -219,6 +224,20 @@ void CalendarUI::create_day(lv_obj_t* parent, int weekday, uint8_t col, uint8_t 
     }
 }
 
+uint32_t CalendarUI::calculate_hash(const char* str) {
+    uint32_t hash = 0x811C9DC5;  // FNV-1a magic.
+    for (size_t i = 0;; i++) {
+        auto c = str[i];
+        if (!c) {
+            break;
+        }
+
+        hash ^= (uint32_t)c << (i % 4) * 8;
+    }
+
+    return hash;
+}
+
 void CalendarUI::create_event(lv_obj_t* parent, const CalendarEventDto& value) {
     auto cont = lv_obj_create(parent);
     reset_layout_container_styles(cont);
@@ -228,7 +247,9 @@ void CalendarUI::create_event(lv_obj_t* parent, const CalendarEventDto& value) {
     lv_obj_set_style_bg_opa(cont, LV_OPA_100, LV_PART_MAIN);
     lv_obj_set_style_bg_color(cont, color_make(value.calendar.color), LV_PART_MAIN);
     lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_style_text_color(cont, lv_color_white(), LV_PART_MAIN);
+    if (value.calendar.color > 0.3) {
+        lv_obj_set_style_text_color(cont, lv_color_white(), LV_PART_MAIN);
+    }
 
     auto event_text = value.summary;
 #if 0

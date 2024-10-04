@@ -384,8 +384,6 @@ void IT8951::enable_enhance_driving_capability() {
 
 void IT8951::set_system_run() { write_command(IT8951_TCON_SYS_RUN); }
 
-void IT8951::set_standby() { write_command(IT8951_TCON_STANDBY); }
-
 void IT8951::set_sleep() { write_command(IT8951_TCON_SLEEP); }
 
 void IT8951::reset() {
@@ -446,18 +444,6 @@ void IT8951::clear_screen() {
         .w = _width,
         .h = _height,
     };
-
-    load_image_start(area, _memory_address, IT8951_ROTATE_0, IT8951_PIXEL_FORMAT_1BPP);
-
-    memset(_buffer, 0xff, _buffer_len);
-
-    auto write = _width / 8 * _height;
-
-    for (size_t offset = 0; offset < write; offset += _buffer_len) {
-        load_image_flush_buffer(min(_buffer_len, write - offset));
-    }
-
-    load_image_end();
 
     display_area(area, _memory_address, IT8951_PIXEL_FORMAT_1BPP, IT8951_DISPLAY_MODE_INIT);
 }
