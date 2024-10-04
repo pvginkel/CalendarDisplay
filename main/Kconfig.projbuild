@@ -27,6 +27,10 @@ menu "Device Configuration"
         int "Update interval of the statistics in seconds"
         default 1800
 
+    config DEVICE_SPI_CONTROLLER
+        int "The SPI controller the display is connected to"
+        default 0
+
 endmenu
 
 menu "OTA Configuration"

@@ -2,6 +2,8 @@
 
 #include "LvglUI.h"
 
+#include "Fonts.h"
+
 constexpr auto CIRCLES = 11;
 constexpr auto CIRCLES_RADIUS = 10;
 constexpr auto CIRCLE_RADIUS = 4;
@@ -90,8 +92,8 @@ void LvglUI::reset_layout_container_styles(lv_obj_t* cont) {
     lv_obj_set_style_pad_all(cont, 0, LV_PART_MAIN);
     lv_obj_set_size(cont, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
 
-     //lv_obj_set_style_border_width(cont, lv_dpx(2), LV_PART_MAIN);
-     //lv_obj_set_style_border_color(cont, lv_color_make(0, 255, 0), LV_PART_MAIN);
+    // lv_obj_set_style_border_width(cont, lv_dpx(2), LV_PART_MAIN);
+    // lv_obj_set_style_border_color(cont, lv_color_make(0, 255, 0), LV_PART_MAIN);
 }
 
 void LvglUI::update() { do_update(); }

@@ -8,11 +8,7 @@
 LOG_TAG(Application);
 
 Application::Application(Device* device)
-    : _device(device),
-      _network_connection(&_queue),
-      _loading_ui(nullptr),
-      _stats_ui(nullptr),
-      _have_sntp_synced(false) {}
+    : _device(device), _network_connection(&_queue), _loading_ui(nullptr), _calendar_ui(nullptr) {}
 
 void Application::begin(bool silent) {
     ESP_LOGI(TAG, "Setting up the log manager");
@@ -106,8 +102,8 @@ void Application::begin_after_initialization() {
 void Application::begin_ui() {
     ESP_LOGI(TAG, "Connected, showing UI");
 
-    _stats_ui = new StatsUI();
-    _stats_ui->begin();
+    _calendar_ui = new CalendarUI();
+    _calendar_ui->begin();
 }
 
 void Application::process() {
@@ -115,7 +111,7 @@ void Application::process() {
 
     _queue.process();
 
-    if (_stats_ui) {
-        _stats_ui->update();
+    if (_calendar_ui) {
+        _calendar_ui->update();
     }
 }

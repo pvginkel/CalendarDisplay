@@ -4,8 +4,9 @@
 
 constexpr auto BUFFER_SIZE = 1024;
 constexpr auto BLOCK_SIZE = 10;
+constexpr auto MAX_MESSAGES = 50;
 
-static const char* TAG = "LogManager";
+LOG_TAG(LogManager);
 
 LogManager* LogManager::_instance = nullptr;
 char* LogManager::_buffer = new char[BUFFER_SIZE];
@@ -19,6 +20,11 @@ int LogManager::log_handler(const char* message, va_list va) {
     va_end(vaCopy);
 
     return _instance->_mutex.with<int>([message, va]() {
+        while (_instance->_messages.size() > MAX_MESSAGES) {
+            free(_instance->_messages[0].buffer);
+            _instance->_messages.erase(_instance->_messages.begin());
+        }
+
         auto result = vsnprintf(_buffer, BUFFER_SIZE, message, va);
 
         bool startTimer = false;

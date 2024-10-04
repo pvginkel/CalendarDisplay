@@ -1,8 +1,8 @@
 ﻿#pragma once
 
+#include "CalendarEventsDto.h"
 #include "Device.h"
 #include "LvglUI.h"
-#include "CalendarEventsDto.h"
 
 class CalendarUI : public LvglUI {
     CalendarEventsDto _data;

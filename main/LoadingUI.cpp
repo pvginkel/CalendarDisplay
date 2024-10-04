@@ -2,6 +2,7 @@
 
 #include "LoadingUI.h"
 
+#include "Fonts.h"
 #include "Messages.h"
 #include "lv_support.h"
 

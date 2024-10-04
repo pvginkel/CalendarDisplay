@@ -1,8 +1,6 @@
 #pragma once
 
-#ifndef LV_SIMULATOR
-
-#include "waveshare_epaper.h"
+#include "waveshare_it8951.h"
 
 class Device {
 public:
@@ -12,9 +10,9 @@ public:
     void process();
 
 private:
-    WaveshareEPaper7P5InV2alt _display;
-
     void flush_cb(lv_disp_drv_t* disp_drv, const lv_area_t* area, lv_color_t* color_p);
-};
 
-#endif
+    WaveshareIT8951 _display{};
+    WaveshareIT8951Frame _frame{};
+    bool _flushing{false};
+};

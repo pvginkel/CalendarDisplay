@@ -1,11 +1,17 @@
 #include "includes.h"
 
-#ifndef LV_SIMULATOR
-
 #include "Device.h"
+
 #include "lvgl.h"
 
 #define LVGL_TICK_PERIOD_MS 2
+
+#define PIN_HRDY 8
+#define PIN_RST 9
+#define PIN_CS 10
+#define PIN_SCLK 12
+#define PIN_MISO 13
+#define PIN_MOSI 11
 
 LOG_TAG(Device);
 
@@ -20,52 +26,77 @@ void Device::process() {
 }
 
 void Device::flush_cb(lv_disp_drv_t* disp_drv, const lv_area_t* area, lv_color_t* color_p) {
-    ESP_LOGI(TAG, "Updating display");
+    ESP_ERROR_ASSERT(LV_COLOR_DEPTH == 8);
 
-    auto target = _display.get_buffer();
+    ESP_LOGD(TAG, "Updating display %dx%d %dx%d", area->x1, area->y1, area->x2, area->y2);
 
-    // Ensure width is a multiple of 8.
+    if (!_flushing) {
+        _flushing = true;
+
+        _frame = {
+            .area{
+                .x = 0,
+                .y = 0,
+                .w = _display.get_width(),
+                .h = _display.get_height(),
+            },
+            .target_memory_address = _display.get_memory_address(),
+            .bpp = 4,
+            .hold = true,
+        };
+
+        _display.update_start(_frame);
+    }
+
     const auto width = _display.get_width();
-    const auto scanline_width = (width + 7) & ~7;
-    const auto height = _display.get_height();
+    const auto height = (area->y2 - area->y1) + 1;
+    const auto buffer = _display.get_buffer();
+    const auto buffer_len = _display.get_buffer_len();
+    size_t buffer_offset = 0;
 
-    uint8_t byte = 0;
+    for (lv_coord_t y = 0; y < height; y++) {
+        for (lv_coord_t x = width - 2; x >= 0; x -= 2) {
+            const auto b1 = color_p[y * width + x].ch.red;
+            const auto b2 = color_p[y * width + x + 1].ch.red;
 
-    for (auto y = 0; y < height; y++) {
-        for (auto x = 0; x < scanline_width; x++) {
-            auto pixel = color_p[y * width + x].full;
+            const auto b = b1 << 1 | b2 << 5;
 
-            byte |= pixel << (7 - x % 8);
+            buffer[buffer_offset++] = b;
 
-            if (x % 8 == 7) {
-                *(target++) = byte;
-                byte = 0;
+            if (buffer_offset >= buffer_len) {
+                _display.update_write_buffer(buffer_offset);
+                buffer_offset = 0;
             }
         }
     }
 
-    _display.update();
+    if (buffer_offset > 0) {
+        _display.update_write_buffer(buffer_offset);
+    }
 
-    ESP_LOGI(TAG, "Finished updating display");
+    if (lv_disp_flush_is_last(disp_drv)) {
+        _display.update_end(_frame);
+
+        _flushing = false;
+    }
 
     lv_disp_flush_ready(disp_drv);
 }
 
 bool Device::begin() {
-    gpio_reset_pin((gpio_num_t)EPD_PWR_PIN);
-    gpio_set_direction((gpio_num_t)EPD_PWR_PIN, GPIO_MODE_OUTPUT);
-    gpio_set_level((gpio_num_t)EPD_PWR_PIN, 1);
+    _display.set_cs_pin(new GPIOPin(PIN_CS, GPIO_MODE_OUTPUT));
+    _display.set_sclk_pin(new GPIOPin(PIN_SCLK, GPIO_MODE_OUTPUT));
+    _display.set_miso_pin(new GPIOPin(PIN_MISO, GPIO_MODE_INPUT));
+    _display.set_mosi_pin(new GPIOPin(PIN_MOSI, GPIO_MODE_OUTPUT));
+    _display.set_busy_pin(new GPIOPin(PIN_HRDY, GPIO_MODE_INPUT, true /* inverted */));
+    _display.set_reset_pin(new GPIOPin(PIN_RST, GPIO_MODE_OUTPUT));
 
-    _display.set_busy_pin(new GPIOPin(EPD_BUSY_PIN, GPIO_MODE_INPUT, true /* inverted */));
-    _display.set_cs_pin(new GPIOPin(EPD_CS_PIN, GPIO_MODE_OUTPUT));
-    _display.set_dc_pin(new GPIOPin(EPD_DC_PIN, GPIO_MODE_OUTPUT));
-    _display.set_reset_pin(new GPIOPin(EPD_RST_PIN, GPIO_MODE_OUTPUT));
-    _display.set_full_update_every(1);
-    _display.setup();
+    _display.setup(-1.15f);
 
     lv_init();
 
     ESP_LOGI(TAG, "Install LVGL tick timer");
+
     // Tick interface for LVGL (using esp_timer to generate 2ms periodic event)
     const esp_timer_create_args_t lvgl_tick_timer_args = {
         .callback = [](void* arg) { lv_tick_inc(LVGL_TICK_PERIOD_MS); },
@@ -76,18 +107,24 @@ bool Device::begin() {
     ESP_ERROR_CHECK(esp_timer_create(&lvgl_tick_timer_args, &lvgl_tick_timer));
     ESP_ERROR_CHECK(esp_timer_start_periodic(lvgl_tick_timer, ESP_TIMER_MS(LVGL_TICK_PERIOD_MS)));
 
-    ESP_LOGI(TAG, "Allocating %d Kb for draw buffer",
-             (sizeof(lv_color_t) * _display.get_width() * _display.get_height()) / 1024);
+    const int draw_buffer_lines = 100;
+    const size_t draw_buffer_pixels = sizeof(lv_color_t) * _display.get_width() * draw_buffer_lines;
+    const size_t draw_buffer_size = sizeof(lv_color_t) * draw_buffer_pixels;
+
+    ESP_LOGI(TAG, "Allocating %d Kb for draw buffer", (draw_buffer_size) / 1024);
+
+    heap_caps_print_heap_info(MALLOC_CAP_INTERNAL);
 
     static lv_disp_draw_buf_t draw_buffer_dsc;
-    auto draw_buffer = (lv_color_t*)heap_caps_malloc(sizeof(lv_color_t) * _display.get_width() * _display.get_height(),
-                                                     MALLOC_CAP_SPIRAM);
+    auto draw_buffer = (lv_color_t*)heap_caps_malloc(draw_buffer_size, MALLOC_CAP_INTERNAL);
     if (!draw_buffer) {
         ESP_LOGE(TAG, "Failed to allocate draw buffer");
         esp_restart();
     }
 
-    lv_disp_draw_buf_init(&draw_buffer_dsc, draw_buffer, nullptr, _display.get_width() * _display.get_height());
+    heap_caps_print_heap_info(MALLOC_CAP_INTERNAL);
+
+    lv_disp_draw_buf_init(&draw_buffer_dsc, draw_buffer, nullptr, draw_buffer_pixels);
 
     static lv_disp_drv_t disp_drv;
     lv_disp_drv_init(&disp_drv);
@@ -111,5 +148,3 @@ bool Device::begin() {
 
     return true;
 }
-
-#endif
