@@ -229,9 +229,7 @@ void CalendarUI::create_event(lv_obj_t* parent, const CalendarEventDto& value) {
     lv_obj_set_style_bg_opa(cont, LV_OPA_100, LV_PART_MAIN);
     lv_obj_set_style_bg_color(cont, color_make(value.calendar.color), LV_PART_MAIN);
     lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
-    if (value.calendar.color > 0.5f) {
-        lv_obj_set_style_text_color(cont, lv_color_white(), LV_PART_MAIN);
-    }
+    lv_obj_set_style_text_color(cont, lv_color_white(), LV_PART_MAIN);
 
     auto event_text = value.summary;
 #if 0

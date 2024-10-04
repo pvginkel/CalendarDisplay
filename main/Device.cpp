@@ -108,7 +108,7 @@ bool Device::begin() {
 
     ESP_LOGI(TAG, "Allocating %d Kb for draw buffer", (draw_buffer_size) / 1024);
 
-    heap_caps_print_heap_info(MALLOC_CAP_INTERNAL);
+    // heap_caps_print_heap_info(MALLOC_CAP_INTERNAL);
 
     static lv_disp_draw_buf_t draw_buffer_dsc;
     auto draw_buffer = (lv_color_t*)heap_caps_malloc(draw_buffer_size, MALLOC_CAP_INTERNAL);
@@ -117,7 +117,7 @@ bool Device::begin() {
         esp_restart();
     }
 
-    heap_caps_print_heap_info(MALLOC_CAP_INTERNAL);
+    // heap_caps_print_heap_info(MALLOC_CAP_INTERNAL);
 
     lv_disp_draw_buf_init(&draw_buffer_dsc, draw_buffer, nullptr, draw_buffer_pixels);
 
