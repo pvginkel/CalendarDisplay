@@ -14,7 +14,8 @@ struct CalendarTimestampDto {
 
 struct CalendarDto {
     string name;
-    float color;
+    string emoji;
+    int color;
 };
 
 struct CalendarMultiDayInstanceDto {

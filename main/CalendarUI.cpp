@@ -124,7 +124,7 @@ void CalendarUI::do_render(lv_obj_t* parent) {
     auto hor_line = lv_obj_create(hor_line_cont);
     lv_obj_remove_style_all(hor_line);
     lv_obj_set_style_bg_opa(hor_line, LV_OPA_100, LV_PART_MAIN);
-    lv_obj_set_style_bg_color(hor_line, color_make(0.4f), LV_PART_MAIN);
+    lv_obj_set_style_bg_color(hor_line, color_make(12), LV_PART_MAIN);
     lv_obj_set_size(hor_line, LV_PCT(100), lv_dpx(4));
 
     auto left_cont = lv_obj_create(outer_cont);
@@ -144,7 +144,7 @@ void CalendarUI::do_render(lv_obj_t* parent) {
     auto ver_line = lv_obj_create(ver_line_cont);
     lv_obj_remove_style_all(ver_line);
     lv_obj_set_style_bg_opa(ver_line, LV_OPA_100, LV_PART_MAIN);
-    lv_obj_set_style_bg_color(ver_line, color_make(0.4f), LV_PART_MAIN);
+    lv_obj_set_style_bg_color(ver_line, color_make(12), LV_PART_MAIN);
     lv_obj_set_size(ver_line, lv_dpx(4), LV_PCT(100));
 
     auto right_cont = lv_obj_create(outer_cont);
@@ -215,7 +215,7 @@ void CalendarUI::create_day(lv_obj_t* parent, int weekday, uint8_t col, uint8_t 
                 auto hor_line = lv_obj_create(cont);
                 lv_obj_remove_style_all(hor_line);
                 lv_obj_set_style_bg_opa(hor_line, LV_OPA_100, LV_PART_MAIN);
-                lv_obj_set_style_bg_color(hor_line, color_make(0.7f), LV_PART_MAIN);
+                lv_obj_set_style_bg_color(hor_line, color_make(7), LV_PART_MAIN);
                 lv_obj_set_size(hor_line, LV_PCT(100), lv_dpx(3));
             }
 
@@ -247,14 +247,17 @@ void CalendarUI::create_event(lv_obj_t* parent, const CalendarEventDto& value) {
     lv_obj_set_style_bg_opa(cont, LV_OPA_100, LV_PART_MAIN);
     lv_obj_set_style_bg_color(cont, color_make(value.calendar.color), LV_PART_MAIN);
     lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
-    if (value.calendar.color > 0.3) {
-        lv_obj_set_style_text_color(cont, lv_color_white(), LV_PART_MAIN);
+    if (value.calendar.color > 10) {
+        lv_obj_set_style_text_color(cont, color_make(0), LV_PART_MAIN);
+    } else {
+        lv_obj_set_style_text_color(cont, color_make(15), LV_PART_MAIN);
     }
 
-    auto event_text = value.summary;
-#if 0
-	event_text += format(" - %s", value.calendar.name.c_str());
-#endif
+    string event_text;
+    if (!value.calendar.emoji.empty()) {
+        event_text += value.calendar.emoji + " ";
+    }
+    event_text += value.summary;
 
     if (value.instance.instance != 0) {
         event_text += format(" " MSG_DAY_OF, value.instance.instance, value.instance.total);
@@ -299,8 +302,8 @@ void CalendarUI::create_event(lv_obj_t* parent, const CalendarEventDto& value) {
     }
 }
 
-lv_color_t CalendarUI::color_make(float color) {
-    auto value = (uint8_t)(255 * (1.0f - color));
+lv_color_t CalendarUI::color_make(int color) {
+    auto value = color << 4 | (color & 1) << 3 | (color & 1) << 2 | (color & 1) << 1 | (color & 1) << 0;
 
     return lv_color_make(value, value, value);
 }

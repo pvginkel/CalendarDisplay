@@ -17,7 +17,7 @@ protected:
     void do_render(lv_obj_t* parent) override;
 
 private:
-    lv_color_t color_make(float color);
+    lv_color_t color_make(int color);
     const char* get_weekday(int weekday);
     const char* get_month(int month);
     void create_event(lv_obj_t* parent, const CalendarEventDto& value);

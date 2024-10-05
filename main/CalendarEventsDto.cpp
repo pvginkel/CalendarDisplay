@@ -42,12 +42,17 @@ static bool parse_calendar(cJSON* obj, CalendarDto& dto) {
     }
     dto.name = name->valuestring;
 
+    auto emoji = cJSON_GetObjectItemCaseSensitive(obj, "emoji");
+    if (cJSON_IsString(emoji)) {
+        dto.emoji = emoji->valuestring;
+    }
+
     auto color = cJSON_GetObjectItemCaseSensitive(obj, "color");
     if (!cJSON_IsNumber(color)) {
         ESP_LOGE(TAG, "Calendar color is not a number");
         return false;
     }
-    dto.color = (float)color->valuedouble;
+    dto.color = color->valueint;
 
     return true;
 }
