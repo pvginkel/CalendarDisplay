@@ -186,8 +186,6 @@ void IT8951::spi_setup() {
     _buffer_len = bus_max_transfer_sz;
     _buffer = (uint8_t*)heap_caps_malloc(bus_max_transfer_sz, MALLOC_CAP_DMA);
     ESP_ERROR_ASSERT(_buffer);
-
-    gpio_dump_io_configuration(stdout, (1ull << 11) | (1ull << 12) | (1ull << 13) | (1ull << 10));
 }
 
 void IT8951::transaction_start() { gpio_set_level((gpio_num_t)CONFIG_IT8951_CS_PIN, 0); }

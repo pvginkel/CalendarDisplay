@@ -37,7 +37,7 @@ void Device::set_on(bool on) {
 }
 
 void Device::flush_cb(lv_disp_drv_t* disp_drv, const lv_area_t* area, lv_color_t* color_p) {
-    ESP_ERROR_ASSERT(LV_COLOR_DEPTH == 8);
+    ESP_ERROR_ASSERT(LV_COLOR_DEPTH == 16);
 
     ESP_LOGD(TAG, "Updating display %dx%d %dx%d", area->x1, area->y1, area->x2, area->y2);
 
@@ -46,8 +46,11 @@ void Device::flush_cb(lv_disp_drv_t* disp_drv, const lv_area_t* area, lv_color_t
     const uint16_t display_width = (area->x2 - area->x1) + 1;
     const uint16_t display_height = disp_drv->hor_res;
 
+    static uint32_t flush_start;
+
     if (!_flushing) {
         _flushing = true;
+        flush_start = esp_get_millis();
 
         IT8951Area area = {
             .x = 0,
@@ -67,8 +70,8 @@ void Device::flush_cb(lv_disp_drv_t* disp_drv, const lv_area_t* area, lv_color_t
 
     for (lv_coord_t y = 0; y < height; y++) {
         for (lv_coord_t x = width - 2; x >= 0; x -= 2) {
-            const auto b1 = convert_3bpp_to_4bpp(color_p[y * width + x].ch.red);
-            const auto b2 = convert_3bpp_to_4bpp(color_p[y * width + x + 1].ch.red);
+            const auto b1 = color_p[y * width + x].ch.red >> 1;
+            const auto b2 = color_p[y * width + x + 1].ch.red >> 1;
 
             buffer[buffer_offset++] = b1 | b2 << 4;
 
@@ -103,13 +106,14 @@ void Device::flush_cb(lv_disp_drv_t* disp_drv, const lv_area_t* area, lv_color_t
     lv_disp_flush_ready(disp_drv);
 
     if (is_last && _standby_after_next_paint) {
+        auto flush_end = esp_get_millis();
+        ESP_LOGI(TAG, "Screen updated in %" PRIu32 " ms", flush_end - flush_start);
+
         _standby_after_next_paint = false;
 
         set_on(false);
     }
 }
-
-uint8_t Device::convert_3bpp_to_4bpp(uint8_t value) { return (value & 0b111) << 1 | (value & 1); }
 
 bool Device::begin() {
     _display.setup(-1.15f);
@@ -130,13 +134,11 @@ bool Device::begin() {
     ESP_ERROR_CHECK(esp_timer_create(&lvgl_tick_timer_args, &lvgl_tick_timer));
     ESP_ERROR_CHECK(esp_timer_start_periodic(lvgl_tick_timer, ESP_TIMER_MS(LVGL_TICK_PERIOD_MS)));
 
-    const int draw_buffer_lines = 100;
-    const size_t draw_buffer_pixels = sizeof(lv_color_t) * _display.get_width() * draw_buffer_lines;
+    const int draw_buffer_lines = 40;
+    const size_t draw_buffer_pixels = _display.get_width() * draw_buffer_lines;
     const size_t draw_buffer_size = sizeof(lv_color_t) * draw_buffer_pixels;
 
-    ESP_LOGI(TAG, "Allocating %d Kb for draw buffer", (draw_buffer_size) / 1024);
-
-    // heap_caps_print_heap_info(MALLOC_CAP_INTERNAL);
+    ESP_LOGI(TAG, "Allocating %dKb for draw buffer", (draw_buffer_size) / 1024);
 
     static lv_disp_draw_buf_t draw_buffer_dsc;
     auto draw_buffer = (lv_color_t*)heap_caps_malloc(draw_buffer_size, MALLOC_CAP_INTERNAL);
@@ -144,8 +146,6 @@ bool Device::begin() {
         ESP_LOGE(TAG, "Failed to allocate draw buffer");
         esp_restart();
     }
-
-    // heap_caps_print_heap_info(MALLOC_CAP_INTERNAL);
 
     lv_disp_draw_buf_init(&draw_buffer_dsc, draw_buffer, nullptr, draw_buffer_pixels);
 
