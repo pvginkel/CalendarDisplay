@@ -59,7 +59,7 @@ void Device::flush_cb(lv_disp_drv_t* disp_drv, const lv_area_t* area, lv_color_t
             .h = display_height,
         };
 
-        _display.load_image_start(area, _display.get_memory_address(), IT8951_ROTATE_90, IT8951_PIXEL_FORMAT_4BPP);
+        _display.load_image_start(area, _display.get_memory_address(), IT8951_ROTATE_270, IT8951_PIXEL_FORMAT_4BPP);
     }
 
     const auto width = display_width;
@@ -105,10 +105,10 @@ void Device::flush_cb(lv_disp_drv_t* disp_drv, const lv_area_t* area, lv_color_t
 
     lv_disp_flush_ready(disp_drv);
 
-    if (is_last && _standby_after_next_paint) {
-        auto flush_end = esp_get_millis();
-        ESP_LOGI(TAG, "Screen updated in %" PRIu32 " ms", flush_end - flush_start);
+    auto flush_end = esp_get_millis();
+    ESP_LOGI(TAG, "Screen updated in %" PRIu32 " ms", flush_end - flush_start);
 
+    if (is_last && _standby_after_next_paint) {
         _standby_after_next_paint = false;
 
         set_on(false);
