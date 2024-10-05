@@ -17,5 +17,6 @@ private:
     bool _on{true};
     IT8951 _display{};
     bool _flushing{false};
+    uint32_t _flush_start{0};
     bool _standby_after_next_paint{false};
 };

@@ -46,11 +46,9 @@ void Device::flush_cb(lv_disp_drv_t* disp_drv, const lv_area_t* area, lv_color_t
     const uint16_t display_width = (area->x2 - area->x1) + 1;
     const uint16_t display_height = disp_drv->hor_res;
 
-    static uint32_t flush_start;
-
     if (!_flushing) {
         _flushing = true;
-        flush_start = esp_get_millis();
+        _flush_start = esp_get_millis();
 
         IT8951Area area = {
             .x = 0,
@@ -106,7 +104,7 @@ void Device::flush_cb(lv_disp_drv_t* disp_drv, const lv_area_t* area, lv_color_t
     lv_disp_flush_ready(disp_drv);
 
     auto flush_end = esp_get_millis();
-    ESP_LOGI(TAG, "Screen updated in %" PRIu32 " ms", flush_end - flush_start);
+    ESP_LOGI(TAG, "Screen updated in %" PRIu32 " ms", flush_end - _flush_start);
 
     if (is_last && _standby_after_next_paint) {
         _standby_after_next_paint = false;
