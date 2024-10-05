@@ -1,7 +1,7 @@
 import os
 import sys
 
-env_vars = ["WIFI_PASSWORD"]
+env_vars = ["WIFI_PASSWORD", "CALENDAR_BEARER_TOKEN"]
 
 content = "#pragma once\n\n"
 

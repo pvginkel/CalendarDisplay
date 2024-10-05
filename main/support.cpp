@@ -52,17 +52,22 @@ int hextoi(char c) {
 
 #ifndef LV_SIMULATOR
 
-esp_err_t esp_http_download_string(const esp_http_client_config_t& config, string& target, size_t maxLength) {
+esp_err_t esp_http_download_string(const esp_http_client_config_t& config, string& target, size_t max_length,
+                                   const char* authorization) {
     target.clear();
 
     constexpr size_t BUFFER_SIZE = 1024;
-    const auto bufferSize = maxLength > 0 ? min(maxLength + 1, BUFFER_SIZE) : BUFFER_SIZE;
+    const auto bufferSize = max_length > 0 ? min(max_length + 1, BUFFER_SIZE) : BUFFER_SIZE;
 
     auto buffer = new char[bufferSize];
     auto err = ESP_OK;
     int64_t length = 0;
 
     auto client = esp_http_client_init(&config);
+
+    if (authorization) {
+        esp_http_client_set_header(client, "Authorization", authorization);
+    }
 
     if ((err = esp_http_client_open(client, 0)) != ESP_OK) {
         goto end;
@@ -84,7 +89,7 @@ esp_err_t esp_http_download_string(const esp_http_client_config_t& config, strin
             break;
         }
 
-        if (maxLength > 0 && target.length() + read > maxLength) {
+        if (max_length > 0 && target.length() + read > max_length) {
             err = ESP_ERR_INVALID_SIZE;
             goto end;
         }

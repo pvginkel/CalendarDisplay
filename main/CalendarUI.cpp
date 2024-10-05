@@ -54,7 +54,7 @@ void CalendarUI::update_data() {
     ESP_LOGI(TAG, "Downloading calendar from %s", config.url);
 
     string json;
-    auto err = esp_http_download_string(config, json, 128 * 1024);
+    auto err = esp_http_download_string(config, json, 128 * 1024, "Bearer " CONFIG_CALENDAR_BEARER_TOKEN);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Failed to download calendar");
         return;
