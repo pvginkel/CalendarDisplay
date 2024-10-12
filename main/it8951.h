@@ -41,7 +41,7 @@ class IT8951 {
 
 public:
     bool setup(float vcom);
-    uint8_t* get_buffer() { return _buffer; }
+    uint8_t* get_buffer() { return _current_buffer == 0 ? _buffer0 : _buffer1; }
     size_t get_buffer_len() { return _buffer_len; }
     uint16_t get_width() { return _width; }
     uint16_t get_height() { return _height; }
@@ -88,7 +88,11 @@ private:
     uint16_t get_mode_value(it8951_display_mode_t mode);
 
     size_t _buffer_len{0};
-    uint8_t* _buffer{nullptr};
+    uint8_t _current_buffer{0};
+    uint8_t* _buffer0{nullptr};
+    uint8_t* _buffer1{nullptr};
+    spi_transaction_t _buffer_transaction{};
+    bool _buffer_transaction_pending{false};
     spi_device_handle_t _spi{nullptr};
     uint32_t _memory_address{0};
     uint16_t _width{0};

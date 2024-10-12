@@ -62,8 +62,9 @@ void Device::flush_cb(lv_disp_drv_t* disp_drv, const lv_area_t* area, lv_color_t
 
     const auto width = display_width;
     const auto height = (area->y2 - area->y1) + 1;
-    const auto buffer = _display.get_buffer();
     const auto buffer_len = _display.get_buffer_len();
+
+    auto buffer = _display.get_buffer();
     size_t buffer_offset = 0;
 
     for (lv_coord_t y = 0; y < height; y++) {
@@ -75,6 +76,7 @@ void Device::flush_cb(lv_disp_drv_t* disp_drv, const lv_area_t* area, lv_color_t
 
             if (buffer_offset >= buffer_len) {
                 _display.load_image_flush_buffer(buffer_offset);
+                buffer = _display.get_buffer();
                 buffer_offset = 0;
             }
         }

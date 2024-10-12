@@ -163,7 +163,7 @@ void IT8951::spi_setup() {
 
     // TODO Re-enable DMA (set to SPI_DMA_DISABLED)
 
-    ESP_ERROR_CHECK(spi_bus_initialize(SPI_HOST, &bus_config, SPI_DMA_DISABLED));
+    ESP_ERROR_CHECK(spi_bus_initialize(SPI_HOST, &bus_config, SPI_DMA_CH_AUTO));
 
     spi_device_interface_config_t device_interface_config = {
         .clock_speed_hz = SPI_MASTER_FREQ_80M / CONFIG_IT8951_SPI_BUS_SPEED_DIVIDER,
@@ -181,11 +181,13 @@ void IT8951::spi_setup() {
     size_t bus_max_transfer_sz;
     ESP_ERROR_CHECK(spi_bus_get_max_transaction_len(SPI_HOST, &bus_max_transfer_sz));
 
-    ESP_LOGI(TAG, "Allocating %d bytes for xfer buffer", bus_max_transfer_sz);
+    ESP_LOGI(TAG, "Allocating %d bytes for xfer buffers", bus_max_transfer_sz);
 
     _buffer_len = bus_max_transfer_sz;
-    _buffer = (uint8_t*)heap_caps_malloc(bus_max_transfer_sz, MALLOC_CAP_DMA);
-    ESP_ERROR_ASSERT(_buffer);
+    _buffer0 = (uint8_t*)heap_caps_malloc(bus_max_transfer_sz, MALLOC_CAP_DMA);
+    ESP_ERROR_ASSERT(_buffer0);
+    _buffer1 = (uint8_t*)heap_caps_malloc(bus_max_transfer_sz, MALLOC_CAP_DMA);
+    ESP_ERROR_ASSERT(_buffer1);
 }
 
 void IT8951::transaction_start() { gpio_set_level((gpio_num_t)CONFIG_IT8951_CS_PIN, 0); }
@@ -500,12 +502,35 @@ void IT8951::load_image_start(IT8951Area& area, uint32_t target_memory_address, 
 void IT8951::load_image_flush_buffer(size_t len) {
     ESP_ERROR_ASSERT(len <= _buffer_len);
 
-    // We don't have to swap the bytes of the words in the array
-    // because we've set the endian type.
-    write_array(_buffer, len, false /* swap */);
+    if (_buffer_transaction_pending) {
+        spi_transaction_t* result_transaction;
+        ESP_ERROR_CHECK(spi_device_get_trans_result(_spi, &result_transaction, portMAX_DELAY));
+
+        ESP_ERROR_ASSERT(result_transaction == &_buffer_transaction);
+
+        _buffer_transaction_pending = false;
+    }
+
+    if (!len) {
+        return;
+    }
+
+    _buffer_transaction = {
+        .length = 8 * len,
+        .tx_buffer = _current_buffer == 0 ? _buffer0 : _buffer1,
+    };
+
+    ESP_ERROR_CHECK(spi_device_queue_trans(_spi, &_buffer_transaction, portMAX_DELAY));
+
+    _buffer_transaction_pending = true;
+    _current_buffer = (_current_buffer + 1) % 2;
 }
 
-void IT8951::load_image_end() {  // This is the end of the write_data method.
+void IT8951::load_image_end() {
+    load_image_flush_buffer(0);
+
+    _current_buffer = 0;
+
     transaction_end();
 
     write_command(IT8951_TCON_LD_IMG_END);
