@@ -1,12 +1,13 @@
 ﻿#pragma once
 
+#include "Buttons.h"
 #include "CalendarEventsDto.h"
 #include "Device.h"
 #include "LvglUI.h"
 
 class CalendarUI : public LvglUI {
 public:
-    CalendarUI(Device* device) : _device(device) {}
+    CalendarUI(Device* device, Buttons* buttons) : _device(device), _buttons(buttons) {}
 
 #ifdef LV_SIMULATOR
     CalendarEventsDto& get_data() { return _data; }
@@ -31,6 +32,7 @@ private:
 
     CalendarEventsDto _data{};
     Device* _device;
+    Buttons* _buttons;
     uint32_t _last_hash;
 #ifndef LV_SIMULATOR
     time_t _next_update{0};

@@ -16,6 +16,8 @@ void Application::begin(bool silent) {
     _log_manager.begin();
 
     setup_flash();
+    _buttons.begin();
+
     do_begin(silent);
 }
 
@@ -102,7 +104,7 @@ void Application::begin_after_initialization() {
 void Application::begin_ui() {
     ESP_LOGI(TAG, "Connected, showing UI");
 
-    _calendar_ui = new CalendarUI(_device);
+    _calendar_ui = new CalendarUI(_device, &_buttons);
     _calendar_ui->begin();
 }
 

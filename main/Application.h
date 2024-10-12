@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Buttons.h"
 #include "CalendarUI.h"
 #include "LoadingUI.h"
 #include "LogManager.h"
@@ -16,6 +17,7 @@ class Application {
     Queue _queue;
     DeviceConfiguration _configuration;
     LogManager _log_manager;
+    Buttons _buttons;
 
 public:
     Application(Device* device);

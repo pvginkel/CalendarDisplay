@@ -16,6 +16,22 @@ menu "Device Configuration"
         int "Timeout after which the device restarts when on the error screen in seconds"
         default 300
 
+    config DEVICE_BUTTON1_PIN
+        int "Pin of button 1"
+        default -1
+
+    config DEVICE_BUTTON2_PIN
+        int "Pin of button 2"
+        default -1
+
+    config DEVICE_BUTTON3_PIN
+        int "Pin of button 3"
+        default -1
+
+    config DEVICE_BUTTON4_PIN
+        int "Pin of button 4"
+        default -1
+
     config CALENDAR_ENDPOINT
         string "Calendar endpoint"
 

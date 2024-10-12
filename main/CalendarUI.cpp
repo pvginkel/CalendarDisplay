@@ -12,7 +12,14 @@
 
 LOG_TAG(CalendarUI);
 
-void CalendarUI::do_begin() { LvglUI::do_begin(); }
+void CalendarUI::do_begin() {
+    LvglUI::do_begin();
+
+    _buttons->on_next_page([]() { ESP_LOGI(TAG, "NEXT PAGE"); });
+    _buttons->on_previous_page([]() { ESP_LOGI(TAG, "PREVIOUS PAGE"); });
+    _buttons->on_home([]() { ESP_LOGI(TAG, "HOME"); });
+    _buttons->on_off([]() { ESP_LOGI(TAG, "OFF"); });
+}
 
 #ifndef LV_SIMULATOR
 
