@@ -99,12 +99,12 @@ void Device::flush_cb(lv_disp_drv_t* disp_drv, const lv_area_t* area, lv_color_t
         _display.display_area(area, _display.get_memory_address(), IT8951_PIXEL_FORMAT_4BPP, IT8951_DISPLAY_MODE_GC16);
 
         _flushing = false;
+
+        auto flush_end = esp_get_millis();
+        ESP_LOGI(TAG, "Screen updated in %" PRIu32 " ms", flush_end - _flush_start);
     }
 
     lv_disp_flush_ready(disp_drv);
-
-    auto flush_end = esp_get_millis();
-    ESP_LOGI(TAG, "Screen updated in %" PRIu32 " ms", flush_end - _flush_start);
 
     if (is_last && _standby_after_next_paint) {
         _standby_after_next_paint = false;
