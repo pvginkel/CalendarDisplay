@@ -59,7 +59,7 @@ public:
 
 private:
     void reset();
-    void spi_setup();
+    void spi_setup(int clock_speed_hz);
     void transaction_start();
     void transaction_end();
     uint8_t read_byte();

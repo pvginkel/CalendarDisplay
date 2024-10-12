@@ -108,12 +108,18 @@ bool IT8951::setup(float vcom) {
 
     ESP_ERROR_CHECK(gpio_config(&i_conf));
 
-    spi_setup();
+    spi_setup(SPI_MASTER_FREQ_10M);
 
     ESP_LOGI(TAG, "Initializing controller");
 
     DeviceInfo device_info;
     controller_setup(device_info, (uint16_t)(fabs(vcom) * 1000));
+
+    // Per documentation. We need to initialize the controller at a low clock
+    // speed. We get errors if we initialize the controller with the below
+    // clock speed.
+
+    spi_setup(SPI_MASTER_FREQ_20M);
 
     _width = device_info.width;
     _height = device_info.height;
@@ -152,21 +158,23 @@ bool IT8951::setup(float vcom) {
     return true;
 }
 
-void IT8951::spi_setup() {
-    spi_bus_config_t bus_config = {
-        .mosi_io_num = CONFIG_IT8951_MOSI_PIN,
-        .miso_io_num = CONFIG_IT8951_MISO_PIN,
-        .sclk_io_num = CONFIG_IT8951_SCLK_PIN,
-        .quadwp_io_num = -1,
-        .quadhd_io_num = -1,
-    };
+void IT8951::spi_setup(int clock_speed_hz) {
+    if (!_spi) {
+        spi_bus_config_t bus_config = {
+            .mosi_io_num = CONFIG_IT8951_MOSI_PIN,
+            .miso_io_num = CONFIG_IT8951_MISO_PIN,
+            .sclk_io_num = CONFIG_IT8951_SCLK_PIN,
+            .quadwp_io_num = -1,
+            .quadhd_io_num = -1,
+        };
 
-    // TODO Re-enable DMA (set to SPI_DMA_DISABLED)
-
-    ESP_ERROR_CHECK(spi_bus_initialize(SPI_HOST, &bus_config, SPI_DMA_CH_AUTO));
+        ESP_ERROR_CHECK(spi_bus_initialize(SPI_HOST, &bus_config, SPI_DMA_CH_AUTO));
+    } else {
+        spi_bus_remove_device(_spi);
+    }
 
     spi_device_interface_config_t device_interface_config = {
-        .clock_speed_hz = SPI_MASTER_FREQ_80M / CONFIG_IT8951_SPI_BUS_SPEED_DIVIDER,
+        .clock_speed_hz = clock_speed_hz,
         .spics_io_num = -1,
         .queue_size = 1,
     };
@@ -177,6 +185,10 @@ void IT8951::spi_setup() {
     ESP_ERROR_CHECK(spi_device_get_actual_freq(_spi, &freq_khz));
     ESP_LOGI(TAG, "SPI device frequency %d KHz", freq_khz);
     ESP_ERROR_ASSERT(freq_khz * 1000 <= device_interface_config.clock_speed_hz);
+
+    if (_buffer0) {
+        return;
+    }
 
     size_t bus_max_transfer_sz;
     ESP_ERROR_CHECK(spi_bus_get_max_transaction_len(SPI_HOST, &bus_max_transfer_sz));
