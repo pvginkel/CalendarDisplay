@@ -257,8 +257,13 @@ void CalendarUI::create_event(lv_obj_t* parent, const CalendarEventDto& value) {
     if (!value.calendar.emoji.empty()) {
         event_text += value.calendar.emoji + " ";
     }
-    event_text += value.summary;
 
+    if (value.summary.length() > 80) {
+        event_text.append(value.summary, 0, 77);
+        event_text += "...";
+    } else {
+        event_text += value.summary;
+    }
     if (value.instance.instance != 0) {
         event_text += format(" " MSG_DAY_OF, value.instance.instance, value.instance.total);
     }
