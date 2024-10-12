@@ -4,7 +4,7 @@
 
 constexpr auto BUFFER_SIZE = 1024;
 constexpr auto BLOCK_SIZE = 10;
-constexpr auto MAX_MESSAGES = 50;
+constexpr auto MAX_MESSAGES = 100;
 
 LOG_TAG(LogManager);
 
