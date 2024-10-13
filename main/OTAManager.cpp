@@ -134,7 +134,7 @@ bool OTAManager::install_update() {
 
         firmwareSize += read;
 
-        ESP_LOGI(TAG, "Written %d bytes, total %d", read, firmwareSize);
+        ESP_LOGD(TAG, "Written %d bytes, total %d", read, firmwareSize);
     }
 
     if (!esp_http_client_is_complete_data_received(client)) {
