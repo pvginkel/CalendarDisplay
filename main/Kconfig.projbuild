@@ -32,6 +32,10 @@ menu "Device Configuration"
         int "Pin of button 4"
         default -1
 
+    config DEVICE_RESET_HOME_INTERVAL
+        int "Number of seconds before the home page (current week) is shown again"
+        default 30
+
     config CALENDAR_ENDPOINT
         string "Calendar endpoint"
 

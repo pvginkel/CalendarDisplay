@@ -15,10 +15,20 @@ LOG_TAG(CalendarUI);
 void CalendarUI::do_begin() {
     LvglUI::do_begin();
 
-    _buttons->on_next_page([]() { ESP_LOGI(TAG, "NEXT PAGE"); });
-    _buttons->on_previous_page([]() { ESP_LOGI(TAG, "PREVIOUS PAGE"); });
-    _buttons->on_home([]() { ESP_LOGI(TAG, "HOME"); });
-    _buttons->on_off([]() { ESP_LOGI(TAG, "OFF"); });
+#ifndef LV_SIMULATOR
+    const esp_timer_create_args_t time_timer_args = {
+        .callback = [](void* arg) { ((CalendarUI*)arg)->show_week(0); },
+        .arg = this,
+        .name = "home_timer",
+    };
+
+    ESP_ERROR_CHECK(esp_timer_create(&time_timer_args, &_home_timer));
+
+    _buttons->on_next_page([this]() { show_week(_week_offset + 1); });
+    _buttons->on_previous_page([this]() { show_week(_week_offset - 1); });
+    _buttons->on_home([this]() { show_week(0); });
+    _buttons->on_off([]() { ESP_LOGI(TAG, "Turning off has not been implemented"); });
+#endif
 }
 
 #ifndef LV_SIMULATOR
@@ -53,8 +63,10 @@ void CalendarUI::do_update() {
 }
 
 void CalendarUI::update_data() {
+    auto url = format(CONFIG_CALENDAR_ENDPOINT, _week_offset);
+
     esp_http_client_config_t config = {
-        .url = CONFIG_CALENDAR_ENDPOINT,
+        .url = url.c_str(),
         .timeout_ms = CONFIG_CALENDAR_ENDPOINT_RECV_TIMEOUT,
     };
 
@@ -84,6 +96,20 @@ void CalendarUI::update_data() {
     _device->standby_after_next_paint();
 
     render();
+}
+
+void CalendarUI::show_week(int week_offset) {
+    _week_offset = week_offset;
+
+    update_data();
+
+    if (esp_timer_is_active(_home_timer)) {
+        ESP_ERROR_CHECK(esp_timer_stop(_home_timer));
+    }
+
+    if (_week_offset != 0) {
+        ESP_ERROR_CHECK(esp_timer_start_once(_home_timer, ESP_TIMER_MS(CONFIG_DEVICE_RESET_HOME_INTERVAL * 1000)));
+    }
 }
 
 #endif
