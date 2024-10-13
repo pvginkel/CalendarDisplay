@@ -49,7 +49,7 @@ void LogManager::begin() {
     _default_log_handler = esp_log_set_vprintf(log_handler);
 
     const esp_timer_create_args_t displayOffTimerArgs = {
-        .callback = [](void* arg) { ((LogManager*)arg)->uploadLogs(); },
+        .callback = [](void* arg) { ((LogManager*)arg)->upload_logs(); },
         .arg = this,
         .name = "logManagerTimer",
     };
@@ -60,7 +60,7 @@ void LogManager::begin() {
         if (_instance) {
             ESP_LOGI(TAG, "Uploading log messages before restart");
 
-            _instance->uploadLogs();
+            _instance->upload_logs();
         }
     });
 }
@@ -77,7 +77,7 @@ void LogManager::set_configuration(const DeviceConfiguration& configuration) {
     }
 }
 
-void LogManager::uploadLogs() {
+void LogManager::upload_logs() {
     auto messages = _mutex.with<vector<Message>>([this]() {
         if (!_configuration) {
             return vector<Message>();

@@ -28,6 +28,6 @@ public:
     void set_configuration(const DeviceConfiguration& configuration);
 
 private:
-    void uploadLogs();
+    void upload_logs();
     void start_timer();
 };
