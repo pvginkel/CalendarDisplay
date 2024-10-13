@@ -29,6 +29,13 @@ string format(const char* fmt, ...) {
     return result;
 }
 
+int getisoweek(tm& time_info) {
+    char week_str[3];
+    strftime(week_str, sizeof(week_str), "%V", &time_info);
+
+    return atoi(week_str);
+}
+
 static bool ichar_equals(char a, char b) {
     return std::tolower(static_cast<unsigned char>(a)) == std::tolower(static_cast<unsigned char>(b));
 }

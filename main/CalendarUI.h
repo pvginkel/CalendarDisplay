@@ -28,14 +28,14 @@ private:
 #ifndef LV_SIMULATOR
     void do_update() override;
     void update_data();
-    void show_week(int week_offset);
+    void set_offset(int offset);
 #endif
 
     CalendarEventsDto _data{};
     Device* _device;
     Buttons* _buttons;
     uint32_t _last_hash;
-    int _week_offset{0};
+    int _offset{0};
 #ifndef LV_SIMULATOR
     time_t _next_update{0};
     esp_timer_handle_t _home_timer;

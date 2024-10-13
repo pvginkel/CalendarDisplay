@@ -185,4 +185,9 @@ void CalendarTimestampDto::to_time_info(tm& time_info) {
         time_info.tm_min = minute;
         time_info.tm_sec = second;
     }
+
+    // Now, convert to a time_t and back to fill in the missing fields.
+
+    auto time = mktime(&time_info);
+    localtime_r(&time, &time_info);
 }

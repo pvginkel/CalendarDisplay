@@ -17,16 +17,16 @@ void CalendarUI::do_begin() {
 
 #ifndef LV_SIMULATOR
     const esp_timer_create_args_t time_timer_args = {
-        .callback = [](void* arg) { ((CalendarUI*)arg)->show_week(0); },
+        .callback = [](void* arg) { ((CalendarUI*)arg)->set_offset(0); },
         .arg = this,
         .name = "home_timer",
     };
 
     ESP_ERROR_CHECK(esp_timer_create(&time_timer_args, &_home_timer));
 
-    _buttons->on_next_page([this]() { show_week(_week_offset + 1); });
-    _buttons->on_previous_page([this]() { show_week(_week_offset - 1); });
-    _buttons->on_home([this]() { show_week(0); });
+    _buttons->on_next_page([this]() { set_offset(_offset + 1); });
+    _buttons->on_previous_page([this]() { set_offset(_offset - 1); });
+    _buttons->on_home([this]() { set_offset(0); });
     _buttons->on_off([]() { ESP_LOGI(TAG, "Turning off has not been implemented"); });
 #endif
 }
@@ -63,7 +63,7 @@ void CalendarUI::do_update() {
 }
 
 void CalendarUI::update_data() {
-    auto url = format(CONFIG_CALENDAR_ENDPOINT, _week_offset);
+    auto url = format(CONFIG_CALENDAR_ENDPOINT, _offset);
 
     esp_http_client_config_t config = {
         .url = url.c_str(),
@@ -98,8 +98,8 @@ void CalendarUI::update_data() {
     render();
 }
 
-void CalendarUI::show_week(int week_offset) {
-    _week_offset = week_offset;
+void CalendarUI::set_offset(int offset) {
+    _offset = offset;
 
     update_data();
 
@@ -107,7 +107,7 @@ void CalendarUI::show_week(int week_offset) {
         ESP_ERROR_CHECK(esp_timer_stop(_home_timer));
     }
 
-    if (_week_offset != 0) {
+    if (_offset != 0) {
         ESP_ERROR_CHECK(esp_timer_start_once(_home_timer, ESP_TIMER_MS(CONFIG_DEVICE_RESET_HOME_INTERVAL * 1000)));
     }
 }
@@ -134,14 +134,18 @@ void CalendarUI::do_render(lv_obj_t* parent) {
 
     tm start_time_info;
     _data.start.to_time_info(start_time_info);
+    tm end_time_info;
+    _data.end.to_time_info(end_time_info);
 
-    auto start_time = mktime(&start_time_info);
-    localtime_r(&start_time, &start_time_info);
+    auto start_week = getisoweek(start_time_info);
+    auto end_week = getisoweek(end_time_info);
 
-    char week_str[3];
-    strftime(week_str, sizeof(week_str), "%V", &start_time_info);
+    auto right_header = format(MSG_WEEK " %d", start_week);
+    if (start_week != end_week) {
+        right_header += format("/%d", end_week);
+    }
 
-    auto right_header = format(MSG_WEEK " %s", week_str);
+    auto is_second_half = ((start_time_info.tm_wday + 6) % 7) >= 4;
 
     auto right_header_label = lv_label_create(outer_cont);
     lv_label_set_text(right_header_label, right_header.c_str());
@@ -160,14 +164,14 @@ void CalendarUI::do_render(lv_obj_t* parent) {
     lv_obj_set_style_bg_color(hor_line, color_make(12), LV_PART_MAIN);
     lv_obj_set_size(hor_line, LV_PCT(100), lv_dpx(4));
 
-    auto left_cont = lv_obj_create(outer_cont);
-    reset_layout_container_styles(left_cont);
-    static lv_coord_t left_cont_col_desc[] = {LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-    static lv_coord_t left_cont_row_desc[] = {LV_GRID_CONTENT, LV_GRID_FR(1),   LV_GRID_CONTENT,
-                                              LV_GRID_FR(1),   LV_GRID_CONTENT, LV_GRID_FR(1),
-                                              LV_GRID_CONTENT, LV_GRID_FR(1),   LV_GRID_TEMPLATE_LAST};
-    lv_obj_set_grid_dsc_array(left_cont, left_cont_col_desc, left_cont_row_desc);
-    lv_obj_set_grid_cell(left_cont, LV_GRID_ALIGN_STRETCH, 0, LV_GRID_ALIGN_STRETCH, 2);
+    auto first_half = lv_obj_create(outer_cont);
+    reset_layout_container_styles(first_half);
+    static lv_coord_t first_half_col_desc[] = {LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+    static lv_coord_t first_half_row_desc[] = {LV_GRID_CONTENT, LV_GRID_FR(1),   LV_GRID_CONTENT,
+                                               LV_GRID_FR(1),   LV_GRID_CONTENT, LV_GRID_FR(1),
+                                               LV_GRID_CONTENT, LV_GRID_FR(1),   LV_GRID_TEMPLATE_LAST};
+    lv_obj_set_grid_dsc_array(first_half, first_half_col_desc, first_half_row_desc);
+    lv_obj_set_grid_cell(first_half, LV_GRID_ALIGN_STRETCH, is_second_half ? 2 : 0, LV_GRID_ALIGN_STRETCH, 2);
 
     auto ver_line_cont = lv_obj_create(outer_cont);
     reset_layout_container_styles(ver_line_cont);
@@ -180,24 +184,34 @@ void CalendarUI::do_render(lv_obj_t* parent) {
     lv_obj_set_style_bg_color(ver_line, color_make(12), LV_PART_MAIN);
     lv_obj_set_size(ver_line, lv_dpx(4), LV_PCT(100));
 
-    auto right_cont = lv_obj_create(outer_cont);
-    reset_layout_container_styles(right_cont);
-    static lv_coord_t right_cont_col_desc[] = {LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-    static lv_coord_t right_cont_row_desc[] = {LV_GRID_CONTENT, LV_GRID_FR(1), LV_GRID_CONTENT,      LV_GRID_FR(1),
-                                               LV_GRID_CONTENT, LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-    lv_obj_set_grid_dsc_array(right_cont, right_cont_col_desc, right_cont_row_desc);
-    lv_obj_set_grid_cell(right_cont, LV_GRID_ALIGN_STRETCH, 2, LV_GRID_ALIGN_STRETCH, 2);
+    auto second_half = lv_obj_create(outer_cont);
+    reset_layout_container_styles(second_half);
+    static lv_coord_t second_half_col_desc[] = {LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+    static lv_coord_t second_half_row_desc[] = {LV_GRID_CONTENT, LV_GRID_FR(1), LV_GRID_CONTENT,      LV_GRID_FR(1),
+                                                LV_GRID_CONTENT, LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+    lv_obj_set_grid_dsc_array(second_half, second_half_col_desc, second_half_row_desc);
+    lv_obj_set_grid_cell(second_half, LV_GRID_ALIGN_STRETCH, is_second_half ? 0 : 2, LV_GRID_ALIGN_STRETCH, 2);
 
-    create_day(left_cont, 0, 0, 0);
-    create_day(left_cont, 1, 0, 2);
-    create_day(left_cont, 2, 0, 4);
-    create_day(left_cont, 3, 0, 6);
-    create_day(right_cont, 4, 0, 0);
-    create_day(right_cont, 5, 0, 2);
-    create_day(right_cont, 6, 0, 4);
+    if (is_second_half) {
+        create_day(second_half, 0, 0, 0);
+        create_day(second_half, 1, 0, 2);
+        create_day(second_half, 2, 0, 4);
+        create_day(first_half, 3, 0, 0);
+        create_day(first_half, 4, 0, 2);
+        create_day(first_half, 5, 0, 4);
+        create_day(first_half, 6, 0, 6);
+    } else {
+        create_day(first_half, 0, 0, 0);
+        create_day(first_half, 1, 0, 2);
+        create_day(first_half, 2, 0, 4);
+        create_day(first_half, 3, 0, 6);
+        create_day(second_half, 4, 0, 0);
+        create_day(second_half, 5, 0, 2);
+        create_day(second_half, 6, 0, 4);
+    }
 }
 
-void CalendarUI::create_day(lv_obj_t* parent, int weekday, uint8_t col, uint8_t row) {
+void CalendarUI::create_day(lv_obj_t* parent, int offset, uint8_t col, uint8_t row) {
     // Format the date, correctly offset for the day we're creating.
 
     tm time_info;
@@ -205,11 +219,11 @@ void CalendarUI::create_day(lv_obj_t* parent, int weekday, uint8_t col, uint8_t 
 
     auto time = mktime(&time_info);
 
-    time += (time_t)weekday * 24 * 3600;
+    time += (time_t)offset * 24 * 3600;
 
     localtime_r(&time, &time_info);
 
-    auto weekday_name = get_weekday(weekday);
+    auto weekday_name = get_weekday((time_info.tm_wday + 6) % 7);
 
     auto year = time_info.tm_year + 1900;
     auto month = time_info.tm_mon + 1;
