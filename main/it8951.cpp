@@ -193,12 +193,13 @@ void IT8951::spi_setup(int clock_speed_hz) {
     size_t bus_max_transfer_sz;
     ESP_ERROR_CHECK(spi_bus_get_max_transaction_len(SPI_HOST, &bus_max_transfer_sz));
 
-    ESP_LOGI(TAG, "Allocating %d bytes for xfer buffers", bus_max_transfer_sz);
+    _buffer_len = min(bus_max_transfer_sz, size_t(2048));
 
-    _buffer_len = bus_max_transfer_sz;
-    _buffer0 = (uint8_t*)heap_caps_malloc(bus_max_transfer_sz, MALLOC_CAP_DMA);
+    ESP_LOGI(TAG, "Allocating %d bytes for xfer buffers (max %d)", _buffer_len, bus_max_transfer_sz);
+
+    _buffer0 = (uint8_t*)heap_caps_malloc(_buffer_len, MALLOC_CAP_DMA);
     ESP_ERROR_ASSERT(_buffer0);
-    _buffer1 = (uint8_t*)heap_caps_malloc(bus_max_transfer_sz, MALLOC_CAP_DMA);
+    _buffer1 = (uint8_t*)heap_caps_malloc(_buffer_len, MALLOC_CAP_DMA);
     ESP_ERROR_ASSERT(_buffer1);
 }
 
