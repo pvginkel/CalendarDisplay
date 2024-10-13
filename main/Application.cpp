@@ -8,7 +8,7 @@
 LOG_TAG(Application);
 
 Application::Application(Device* device)
-    : _device(device), _network_connection(&_queue), _loading_ui(nullptr), _calendar_ui(nullptr) {}
+    : _device(device), _network_connection(&_queue), _loading_ui(nullptr), _calendar_ui(nullptr), _buttons(&_queue) {}
 
 void Application::begin(bool silent) {
     ESP_LOGI(TAG, "Setting up the log manager");
@@ -16,7 +16,6 @@ void Application::begin(bool silent) {
     _log_manager.begin();
 
     setup_flash();
-    _buttons.begin();
 
     do_begin(silent);
 }
@@ -97,6 +96,9 @@ void Application::begin_after_initialization() {
     // Log the reset reason.
     auto reset_reason = esp_reset_reason();
     ESP_LOGI(TAG, "esp_reset_reason: %s (%d)", esp_reset_reason_to_name(reset_reason), reset_reason);
+
+    // Enable the buttons.
+    _buttons.begin();
 
     begin_ui();
 }

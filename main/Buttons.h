@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Queue.h"
+
 class Buttons {
     struct Button {
         Buttons* parent;
@@ -9,13 +11,16 @@ class Buttons {
     static void IRAM_ATTR gpio_isr_handler(void* arg);
 
     uint32_t _last_millis;
-    QueueHandle_t _queue;
+    QueueHandle_t _task_queue;
+    Queue* _queue;
     Callback<void> _next_page;
     Callback<void> _previous_page;
     Callback<void> _home;
     Callback<void> _off;
 
 public:
+    Buttons(Queue* queue) : _queue(queue) {}
+
     void begin();
 
     void on_next_page(function<void(void)> func) { _next_page.add(func); }

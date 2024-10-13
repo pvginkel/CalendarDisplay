@@ -2,11 +2,15 @@
 
 #include "Buttons.h"
 
+static constexpr auto QUEUE_SIZE = 10;
+
 void IRAM_ATTR Buttons::gpio_isr_handler(void* arg) {
     auto button = (Button*)arg;
     auto pin = (uint32_t)button->pin;
 
-    xQueueSendFromISR(button->parent->_queue, &pin, nullptr);
+    if (uxQueueMessagesWaitingFromISR(button->parent->_task_queue) < QUEUE_SIZE) {
+        xQueueSendFromISR(button->parent->_task_queue, &pin, nullptr);
+    }
 }
 
 void Buttons::begin() {
@@ -21,7 +25,7 @@ void Buttons::begin() {
 
     ESP_ERROR_CHECK(gpio_config(&i_conf));
 
-    _queue = xQueueCreate(10, sizeof(uint32_t));
+    _task_queue = xQueueCreate(QUEUE_SIZE, sizeof(uint32_t));
 
     xTaskCreate(
         [](void* arg) {
@@ -29,7 +33,7 @@ void Buttons::begin() {
             uint32_t pin;
 
             while (true) {
-                if (xQueueReceive(self->_queue, &pin, portMAX_DELAY)) {
+                if (xQueueReceive(self->_task_queue, &pin, portMAX_DELAY)) {
                     auto level = gpio_get_level((gpio_num_t)pin);
                     auto clicked = !level;
                     auto current_millis = esp_get_millis();
@@ -37,16 +41,16 @@ void Buttons::begin() {
                     if (clicked && current_millis - self->_last_millis > 10) {
                         switch (pin) {
                             case CONFIG_DEVICE_BUTTON1_PIN:
-                                self->_next_page.call();
+                                self->_next_page.queue(self->_queue);
                                 break;
                             case CONFIG_DEVICE_BUTTON2_PIN:
-                                self->_previous_page.call();
+                                self->_previous_page.queue(self->_queue);
                                 break;
                             case CONFIG_DEVICE_BUTTON3_PIN:
-                                self->_home.call();
+                                self->_home.queue(self->_queue);
                                 break;
                             case CONFIG_DEVICE_BUTTON4_PIN:
-                                self->_off.call();
+                                self->_off.queue(self->_queue);
                                 break;
                         }
                     }
