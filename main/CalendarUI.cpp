@@ -191,6 +191,10 @@ void CalendarUI::create_day(lv_obj_t* parent, int weekday, uint8_t col, uint8_t 
 
     auto header = format("%s %d", weekday_name, day);
 
+    if (year == _data.today.year && month == _data.today.month && day == _data.today.day) {
+        header += " " MSG_BULLSEYE;
+    }
+
     // Render the events.
 
     auto cont = lv_obj_create(parent);

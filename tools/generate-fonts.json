@@ -1,17 +1,7 @@
 [
   {
     "name": "lv_font_regular_{size}",
-    "size": [56, 28],
-    "fonts": [
-      {
-        "file": "Roboto-Regular.ttf",
-        "range": "0x20-0x7F,0xB0,0x2022"
-      }
-    ]
-  },
-  {
-    "name": "lv_font_regular_{size}",
-    "size": [44, 24],
+    "size": [56, 44, 28, 24],
     "fonts": [
       {
         "file": "Roboto-Regular.ttf",
@@ -19,7 +9,7 @@
       },
       {
         "file": "seguiemj.ttf",
-        "range": "0x1F389,0x1F468,0x1F469"
+        "range": "0x1F389,0x1F468,0x1F469,0x1F3AF"
       }
     ]
   },
@@ -30,6 +20,10 @@
       {
         "file": "Roboto-Medium.ttf",
         "range": "0x20-0x7F,0xB0,0x2022"
+      },
+      {
+        "file": "seguiemj.ttf",
+        "range": "0x1F389,0x1F468,0x1F469,0x1F3AF"
       }
     ]
   }

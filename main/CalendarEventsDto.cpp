@@ -150,6 +150,11 @@ bool CalendarEventsDto::from_json(const char* json_string, CalendarEventsDto& da
         return false;
     }
 
+    auto today = cJSON_GetObjectItemCaseSensitive(*root, "today");
+    if (!parse_calendar_timestamp(today, data.today)) {
+        return false;
+    }
+
     const auto events = cJSON_GetObjectItemCaseSensitive(*root, "events");
     if (!cJSON_IsArray(events)) {
         ESP_LOGE(TAG, "Calendar events is not an array");

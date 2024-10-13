@@ -25,6 +25,7 @@
 #define MSG_NOVEMBER "November"
 #define MSG_DECEMBER "December"
 #define MSG_UNTIL "Tot"
+#define MSG_BULLSEYE "\U0001F3AF"
 
 #define FA_CUBE "\U0000f1b2"
 #define FA_CUBES "\U0000f1b3"

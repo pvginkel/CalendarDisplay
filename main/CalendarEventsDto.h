@@ -35,6 +35,7 @@ struct CalendarEventDto {
 struct CalendarEventsDto {
     CalendarTimestampDto start;
     CalendarTimestampDto end;
+    CalendarTimestampDto today;
     vector<CalendarEventDto> events;
 
     CalendarEventsDto() = default;
