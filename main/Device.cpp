@@ -57,7 +57,7 @@ void Device::flush_cb(lv_disp_drv_t* disp_drv, const lv_area_t* area, lv_color_t
             .h = display_height,
         };
 
-        _display.load_image_start(area, _display.get_memory_address(), IT8951_ROTATE_270, IT8951_PIXEL_FORMAT_4BPP);
+        _display.load_image_start(area, _display.get_memory_address(), IT8951_ROTATE_90, IT8951_PIXEL_FORMAT_4BPP);
     }
 
     const auto width = display_width;
