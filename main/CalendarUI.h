@@ -6,6 +6,9 @@
 #include "LvglUI.h"
 
 class CalendarUI : public LvglUI {
+    enum class orientation_t { horizontal, vertical };
+    enum class week_column_t { left, right };
+
 public:
     CalendarUI(Device* device, Buttons* buttons) : _device(device), _buttons(buttons) {}
 
@@ -22,7 +25,12 @@ private:
     const char* get_weekday(int weekday);
     const char* get_month(int month);
     void create_event(lv_obj_t* parent, const CalendarEventDto& value);
-    void create_day(lv_obj_t* parent, int weekday, uint8_t col, uint8_t row);
+    void create_day(lv_obj_t* parent, int weekday, uint8_t col, uint8_t row, week_column_t week_column);
+    lv_obj_t* create_line(lv_obj_t* parent, orientation_t orientation, uint8_t col, uint8_t col_span, uint8_t row,
+                          uint8_t row_span);
+    lv_obj_t* create_line(lv_obj_t* parent, orientation_t orientation, uint8_t col, uint8_t row) {
+        return create_line(parent, orientation, col, 1, row, 1);
+    }
     uint32_t calculate_hash(const char* str);
 
 #ifndef LV_SIMULATOR

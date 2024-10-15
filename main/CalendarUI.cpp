@@ -153,65 +153,78 @@ void CalendarUI::do_render(lv_obj_t* parent) {
     lv_obj_set_grid_cell(right_header_label, LV_GRID_ALIGN_END, 0, 3, LV_GRID_ALIGN_START, 0, 1);
     lv_obj_set_style_pad_hor(right_header_label, lv_dpx(10), LV_PART_MAIN);
 
-    auto hor_line_cont = lv_obj_create(outer_cont);
-    reset_layout_container_styles(hor_line_cont);
-    lv_obj_set_style_pad_top(hor_line_cont, lv_dpx(6), LV_PART_MAIN);
-    lv_obj_set_grid_cell(hor_line_cont, LV_GRID_ALIGN_STRETCH, 0, 3, LV_GRID_ALIGN_START, 1, 1);
-
-    auto hor_line = lv_obj_create(hor_line_cont);
-    lv_obj_remove_style_all(hor_line);
-    lv_obj_set_style_bg_opa(hor_line, LV_OPA_100, LV_PART_MAIN);
-    lv_obj_set_style_bg_color(hor_line, color_make(12), LV_PART_MAIN);
-    lv_obj_set_size(hor_line, LV_PCT(100), lv_dpx(4));
+    auto hor_line = create_line(outer_cont, orientation_t::horizontal, 0, 3, 1, 1);
+    lv_obj_set_style_pad_top(hor_line, lv_dpx(6), LV_PART_MAIN);
 
     auto first_half = lv_obj_create(outer_cont);
     reset_layout_container_styles(first_half);
     static lv_coord_t first_half_col_desc[] = {LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-    static lv_coord_t first_half_row_desc[] = {LV_GRID_CONTENT, LV_GRID_FR(1),   LV_GRID_CONTENT,
-                                               LV_GRID_FR(1),   LV_GRID_CONTENT, LV_GRID_FR(1),
-                                               LV_GRID_CONTENT, LV_GRID_FR(1),   LV_GRID_TEMPLATE_LAST};
+    static lv_coord_t first_half_row_desc[] = {
+        LV_GRID_CONTENT, LV_GRID_FR(1), LV_GRID_CONTENT, LV_GRID_CONTENT, LV_GRID_FR(1), LV_GRID_CONTENT,
+        LV_GRID_CONTENT, LV_GRID_FR(1), LV_GRID_CONTENT, LV_GRID_CONTENT, LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
     lv_obj_set_grid_dsc_array(first_half, first_half_col_desc, first_half_row_desc);
     lv_obj_set_grid_cell(first_half, LV_GRID_ALIGN_STRETCH, is_second_half ? 2 : 0, LV_GRID_ALIGN_STRETCH, 2);
 
-    auto ver_line_cont = lv_obj_create(outer_cont);
-    reset_layout_container_styles(ver_line_cont);
-    lv_obj_set_style_pad_hor(ver_line_cont, lv_dpx(12), LV_PART_MAIN);
-    lv_obj_set_grid_cell(ver_line_cont, LV_GRID_ALIGN_START, 1, LV_GRID_ALIGN_STRETCH, 2);
-
-    auto ver_line = lv_obj_create(ver_line_cont);
-    lv_obj_remove_style_all(ver_line);
-    lv_obj_set_style_bg_opa(ver_line, LV_OPA_100, LV_PART_MAIN);
-    lv_obj_set_style_bg_color(ver_line, color_make(12), LV_PART_MAIN);
-    lv_obj_set_size(ver_line, lv_dpx(4), LV_PCT(100));
+    create_line(outer_cont, orientation_t::vertical, 1, 2);
 
     auto second_half = lv_obj_create(outer_cont);
     reset_layout_container_styles(second_half);
     static lv_coord_t second_half_col_desc[] = {LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-    static lv_coord_t second_half_row_desc[] = {LV_GRID_CONTENT, LV_GRID_FR(1), LV_GRID_CONTENT,      LV_GRID_FR(1),
+    static lv_coord_t second_half_row_desc[] = {LV_GRID_CONTENT, LV_GRID_FR(1), LV_GRID_CONTENT,
+                                                LV_GRID_CONTENT, LV_GRID_FR(1), LV_GRID_CONTENT,
                                                 LV_GRID_CONTENT, LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
     lv_obj_set_grid_dsc_array(second_half, second_half_col_desc, second_half_row_desc);
     lv_obj_set_grid_cell(second_half, LV_GRID_ALIGN_STRETCH, is_second_half ? 0 : 2, LV_GRID_ALIGN_STRETCH, 2);
 
+    create_line(first_half, orientation_t::horizontal, 0, 2);
+    create_line(first_half, orientation_t::horizontal, 0, 5);
+    create_line(first_half, orientation_t::horizontal, 0, 8);
+    create_line(second_half, orientation_t::horizontal, 0, 2);
+    create_line(second_half, orientation_t::horizontal, 0, 5);
+
     if (is_second_half) {
-        create_day(second_half, 0, 0, 0);
-        create_day(second_half, 1, 0, 2);
-        create_day(second_half, 2, 0, 4);
-        create_day(first_half, 3, 0, 0);
-        create_day(first_half, 4, 0, 2);
-        create_day(first_half, 5, 0, 4);
-        create_day(first_half, 6, 0, 6);
+        create_day(second_half, 0, 0, 0, week_column_t::left);
+        create_day(second_half, 1, 0, 3, week_column_t::left);
+        create_day(second_half, 2, 0, 6, week_column_t::left);
+        create_day(first_half, 3, 0, 0, week_column_t::right);
+        create_day(first_half, 4, 0, 3, week_column_t::right);
+        create_day(first_half, 5, 0, 6, week_column_t::right);
+        create_day(first_half, 6, 0, 9, week_column_t::right);
     } else {
-        create_day(first_half, 0, 0, 0);
-        create_day(first_half, 1, 0, 2);
-        create_day(first_half, 2, 0, 4);
-        create_day(first_half, 3, 0, 6);
-        create_day(second_half, 4, 0, 0);
-        create_day(second_half, 5, 0, 2);
-        create_day(second_half, 6, 0, 4);
+        create_day(first_half, 0, 0, 0, week_column_t::left);
+        create_day(first_half, 1, 0, 3, week_column_t::left);
+        create_day(first_half, 2, 0, 6, week_column_t::left);
+        create_day(first_half, 3, 0, 9, week_column_t::left);
+        create_day(second_half, 4, 0, 0, week_column_t::right);
+        create_day(second_half, 5, 0, 3, week_column_t::right);
+        create_day(second_half, 6, 0, 6, week_column_t::right);
     }
 }
 
-void CalendarUI::create_day(lv_obj_t* parent, int offset, uint8_t col, uint8_t row) {
+lv_obj_t* CalendarUI::create_line(lv_obj_t* parent, orientation_t orientation, uint8_t col, uint8_t col_span,
+                                  uint8_t row, uint8_t row_span) {
+    auto line_cont = lv_obj_create(parent);
+    reset_layout_container_styles(line_cont);
+    if (orientation == orientation_t::horizontal) {
+        lv_obj_set_grid_cell(line_cont, LV_GRID_ALIGN_STRETCH, col, col_span, LV_GRID_ALIGN_START, row, row_span);
+    } else {
+        lv_obj_set_grid_cell(line_cont, LV_GRID_ALIGN_START, col, col_span, LV_GRID_ALIGN_STRETCH, row, row_span);
+    }
+
+    auto line = lv_obj_create(line_cont);
+    lv_obj_remove_style_all(line);
+    lv_obj_set_style_bg_opa(line, LV_OPA_100, LV_PART_MAIN);
+    lv_obj_set_style_bg_color(line, color_make(12), LV_PART_MAIN);
+    if (orientation == orientation_t::horizontal) {
+        lv_obj_set_size(line, LV_PCT(100), lv_dpx(4));
+    } else {
+        lv_obj_set_size(line, lv_dpx(4), LV_PCT(100));
+    }
+
+    return line_cont;
+}
+
+void CalendarUI::create_day(lv_obj_t* parent, int offset, uint8_t col, uint8_t row, week_column_t week_column) {
     // Format the date, correctly offset for the day we're creating.
 
     tm time_info;
@@ -242,6 +255,11 @@ void CalendarUI::create_day(lv_obj_t* parent, int offset, uint8_t col, uint8_t r
     lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_grid_cell(cont, LV_GRID_ALIGN_STRETCH, col, LV_GRID_ALIGN_START, row);
     lv_obj_set_style_pad_row(cont, lv_dpx(8), LV_PART_MAIN);
+    if (week_column == week_column_t::left) {
+        lv_obj_set_style_pad_right(cont, lv_dpx(12), LV_PART_MAIN);
+    } else {
+        lv_obj_set_style_pad_left(cont, lv_dpx(12), LV_PART_MAIN);
+    }
 
     auto label = lv_label_create(cont);
     lv_label_set_text(label, header.c_str());
