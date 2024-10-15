@@ -242,30 +242,43 @@ void CalendarUI::create_day(lv_obj_t* parent, int offset, uint8_t col, uint8_t r
     auto month = time_info.tm_mon + 1;
     auto day = time_info.tm_mday;
 
-    auto header = format("%s %d", weekday_name, day);
-
-    if (year == _data.today.year && month == _data.today.month && day == _data.today.day) {
-        header += " " MSG_BULLSEYE;
-    }
+    auto header = format("%d. %s", day, weekday_name);
 
     // Render the events.
 
-    auto cont = lv_obj_create(parent);
+    auto outer_cont = lv_obj_create(parent);
+    reset_layout_container_styles(outer_cont);
+    static lv_coord_t outer_cont_col_desc[] = {LV_GRID_FR(1), LV_GRID_CONTENT, LV_GRID_TEMPLATE_LAST};
+    static lv_coord_t outer_cont_row_desc[] = {LV_GRID_CONTENT, LV_GRID_CONTENT, LV_GRID_TEMPLATE_LAST};
+    lv_obj_set_grid_dsc_array(outer_cont, outer_cont_col_desc, outer_cont_row_desc);
+    lv_obj_set_grid_cell(outer_cont, LV_GRID_ALIGN_STRETCH, col, LV_GRID_ALIGN_START, row);
+
+    auto header_label = lv_label_create(outer_cont);
+    lv_label_set_text(header_label, header.c_str());
+    lv_obj_set_grid_cell(header_label, LV_GRID_ALIGN_STRETCH, 0, 1, LV_GRID_ALIGN_START, 0, 1);
+    lv_obj_set_style_text_font(header_label, SMALL_MEDIUM_FONT, LV_PART_MAIN);
+    lv_obj_set_style_pad_hor(header_label, lv_dpx(10), LV_PART_MAIN);
+    lv_obj_set_style_pad_ver(header_label, lv_dpx(10), LV_PART_MAIN);
+
+    if (year == _data.today.year && month == _data.today.month && day == _data.today.day) {
+        auto today_label = lv_label_create(outer_cont);
+        lv_label_set_text(today_label, MSG_BULLSEYE);
+        lv_obj_set_grid_cell(today_label, LV_GRID_ALIGN_STRETCH, 1, 1, LV_GRID_ALIGN_START, 0, 1);
+        lv_obj_set_style_text_font(today_label, SMALL_MEDIUM_FONT, LV_PART_MAIN);
+        lv_obj_set_style_pad_hor(today_label, lv_dpx(10), LV_PART_MAIN);
+        lv_obj_set_style_pad_ver(today_label, lv_dpx(10), LV_PART_MAIN);
+    }
+
+    auto cont = lv_obj_create(outer_cont);
     reset_layout_container_styles(cont);
     lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_grid_cell(cont, LV_GRID_ALIGN_STRETCH, col, LV_GRID_ALIGN_START, row);
+    lv_obj_set_grid_cell(cont, LV_GRID_ALIGN_STRETCH, 0, 2, LV_GRID_ALIGN_START, 1, 1);
     lv_obj_set_style_pad_row(cont, lv_dpx(8), LV_PART_MAIN);
     if (week_column == week_column_t::left) {
         lv_obj_set_style_pad_right(cont, lv_dpx(12), LV_PART_MAIN);
     } else {
         lv_obj_set_style_pad_left(cont, lv_dpx(12), LV_PART_MAIN);
     }
-
-    auto label = lv_label_create(cont);
-    lv_label_set_text(label, header.c_str());
-    lv_obj_set_style_text_font(label, SMALL_MEDIUM_FONT, LV_PART_MAIN);
-    lv_obj_set_style_pad_hor(label, lv_dpx(10), LV_PART_MAIN);
-    lv_obj_set_style_pad_top(label, lv_dpx(10), LV_PART_MAIN);
 
     auto had_all_day = false;
 
