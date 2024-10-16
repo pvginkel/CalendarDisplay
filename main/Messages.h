@@ -26,6 +26,8 @@
 #define MSG_DECEMBER "December"
 #define MSG_UNTIL "Tot"
 #define MSG_BULLSEYE "\U0001F3AF"
+#define MSG_PARTY_POPPER "\U0001F389"
+#define MSG_COUNTDOWN "Nog %d dagen"
 
 #define FA_CUBE "\U0000f1b2"
 #define FA_CUBES "\U0000f1b3"

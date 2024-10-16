@@ -121,21 +121,30 @@ void CalendarUI::do_render(lv_obj_t* parent) {
     static lv_coord_t outer_cont_row_desc[] = {LV_GRID_CONTENT, LV_GRID_CONTENT, LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
     lv_obj_set_grid_dsc_array(outer_cont, outer_cont_col_desc, outer_cont_row_desc);
 
+    auto top_cont = lv_obj_create(outer_cont);
+    reset_layout_container_styles(top_cont);
+    static lv_coord_t top_cont_col_desc[] = { LV_GRID_CONTENT, LV_GRID_FR(1), LV_GRID_CONTENT, LV_GRID_TEMPLATE_LAST };
+    static lv_coord_t top_cont_row_desc[] = { LV_GRID_CONTENT, LV_GRID_TEMPLATE_LAST };
+    lv_obj_set_grid_dsc_array(top_cont, top_cont_col_desc, top_cont_row_desc);
+    lv_obj_set_grid_cell(top_cont, LV_GRID_ALIGN_STRETCH, 0, 3, LV_GRID_ALIGN_START, 0, 1);
+    lv_obj_set_style_pad_hor(top_cont, lv_dpx(10), LV_PART_MAIN);
+
     auto left_header = format("%.3s", get_month(_data.start.month));
     if (_data.start.month != _data.end.month) {
-        left_header += format(" - %.3s", get_month(_data.end.month));
+        left_header += format("/%.3s", get_month(_data.end.month));
     }
 
-    auto left_header_label = lv_label_create(outer_cont);
+    auto left_header_label = lv_label_create(top_cont);
     lv_label_set_text(left_header_label, left_header.c_str());
     lv_obj_set_style_text_font(left_header_label, NORMAL_FONT, LV_PART_MAIN);
-    lv_obj_set_grid_cell(left_header_label, LV_GRID_ALIGN_START, 0, 3, LV_GRID_ALIGN_START, 0, 1);
-    lv_obj_set_style_pad_hor(left_header_label, lv_dpx(10), LV_PART_MAIN);
+    lv_obj_set_grid_cell(left_header_label, LV_GRID_ALIGN_START, 0, LV_GRID_ALIGN_START, 0);
 
     tm start_time_info;
     _data.start.to_time_info(start_time_info);
     tm end_time_info;
     _data.end.to_time_info(end_time_info);
+    tm today_time_info;
+    _data.today.to_time_info(today_time_info);
 
     auto start_week = getisoweek(start_time_info);
     auto end_week = getisoweek(end_time_info);
@@ -147,11 +156,25 @@ void CalendarUI::do_render(lv_obj_t* parent) {
 
     auto is_second_half = ((start_time_info.tm_wday + 6) % 7) >= 4;
 
-    auto right_header_label = lv_label_create(outer_cont);
+    auto right_header_label = lv_label_create(top_cont);
     lv_label_set_text(right_header_label, right_header.c_str());
     lv_obj_set_style_text_font(right_header_label, NORMAL_FONT, LV_PART_MAIN);
-    lv_obj_set_grid_cell(right_header_label, LV_GRID_ALIGN_END, 0, 3, LV_GRID_ALIGN_START, 0, 1);
-    lv_obj_set_style_pad_hor(right_header_label, lv_dpx(10), LV_PART_MAIN);
+    lv_obj_set_grid_cell(right_header_label, LV_GRID_ALIGN_START, 2, LV_GRID_ALIGN_START, 0);
+
+    if (_data.countdown.year) {
+        tm countdown_time_info;
+        _data.countdown.to_time_info(countdown_time_info);
+        auto countdown = mktime(&countdown_time_info);
+        auto today = mktime(&today_time_info);
+        auto countdown_days = (int)((countdown - today) / (24ull * 3600));
+        auto middle_header = format(MSG_COUNTDOWN, countdown_days);
+
+        auto middle_header_label = lv_label_create(top_cont);
+        lv_label_set_text(middle_header_label, middle_header.c_str());
+        lv_obj_set_style_text_font(middle_header_label, SMALL_MEDIUM_FONT, LV_PART_MAIN);
+        lv_obj_set_grid_cell(middle_header_label, LV_GRID_ALIGN_CENTER, 1, LV_GRID_ALIGN_CENTER, 0);
+        lv_obj_set_style_pad_hor(middle_header_label, lv_dpx(10), LV_PART_MAIN);
+    }
 
     auto hor_line = create_line(outer_cont, orientation_t::horizontal, 0, 3, 1, 1);
     lv_obj_set_style_pad_top(hor_line, lv_dpx(6), LV_PART_MAIN);
@@ -224,7 +247,7 @@ lv_obj_t* CalendarUI::create_line(lv_obj_t* parent, orientation_t orientation, u
     return line_cont;
 }
 
-void CalendarUI::create_day(lv_obj_t* parent, int offset, uint8_t col, uint8_t row, week_column_t week_column) {
+void CalendarUI::create_day(lv_obj_t* parent, int weekday, uint8_t col, uint8_t row, week_column_t week_column) {
     // Format the date, correctly offset for the day we're creating.
 
     tm time_info;
@@ -232,7 +255,7 @@ void CalendarUI::create_day(lv_obj_t* parent, int offset, uint8_t col, uint8_t r
 
     auto time = mktime(&time_info);
 
-    time += (time_t)offset * 24 * 3600;
+    time += (time_t)weekday * 24 * 3600;
 
     localtime_r(&time, &time_info);
 

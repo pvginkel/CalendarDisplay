@@ -150,6 +150,11 @@ bool CalendarEventsDto::from_json(const char* json_string, CalendarEventsDto& da
         return false;
     }
 
+    const auto countdown = cJSON_GetObjectItemCaseSensitive(*root, "countdown");
+    if (!cJSON_IsNull(countdown) && !parse_calendar_timestamp(countdown, data.countdown)) {
+        return false;
+    }
+
     auto today = cJSON_GetObjectItemCaseSensitive(*root, "today");
     if (!parse_calendar_timestamp(today, data.today)) {
         return false;
