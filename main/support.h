@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef LV_SIMULATOR
+#include <ctime>
+#endif
+
 #include "cJSON.h"
 
 #define esp_get_millis() uint32_t(esp_timer_get_time() / 1000ull)
@@ -68,6 +72,8 @@ public:
 };
 
 #ifdef LV_SIMULATOR
+#define IRAM_ATTR
+
 #define localtime_r(timep, result) localtime_s(result, timep)
 #endif
 
