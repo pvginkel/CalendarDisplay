@@ -32,6 +32,8 @@ private:
         return create_line(parent, orientation, col, 1, row, 1);
     }
     uint32_t calculate_hash(const char* str);
+    bool scroll_content(lv_obj_t* cont, week_column_t week_column);
+    lv_obj_t* create_ellipsis_obj(lv_obj_t* parent, uint8_t col, uint8_t row);
 
 #ifndef LV_SIMULATOR
     void do_update() override;
@@ -44,6 +46,8 @@ private:
     Buttons* _buttons;
     uint32_t _last_hash;
     int _offset{0};
+    lv_obj_t* _scroll_to_cont{nullptr};
+    week_column_t _scroll_to_cont_week_column{};
 #ifndef LV_SIMULATOR
     time_t _next_update{0};
     esp_timer_handle_t _home_timer;

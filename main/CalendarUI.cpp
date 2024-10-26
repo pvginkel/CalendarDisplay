@@ -115,6 +115,8 @@ void CalendarUI::set_offset(int offset) {
 #endif
 
 void CalendarUI::do_render(lv_obj_t* parent) {
+    _scroll_to_cont = nullptr;
+
     auto outer_cont = lv_obj_create(parent);
     reset_outer_container_styles(outer_cont);
     static lv_coord_t outer_cont_col_desc[] = {LV_GRID_FR(1), LV_GRID_CONTENT, LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
@@ -123,8 +125,8 @@ void CalendarUI::do_render(lv_obj_t* parent) {
 
     auto top_cont = lv_obj_create(outer_cont);
     reset_layout_container_styles(top_cont);
-    static lv_coord_t top_cont_col_desc[] = { LV_GRID_CONTENT, LV_GRID_FR(1), LV_GRID_CONTENT, LV_GRID_TEMPLATE_LAST };
-    static lv_coord_t top_cont_row_desc[] = { LV_GRID_CONTENT, LV_GRID_TEMPLATE_LAST };
+    static lv_coord_t top_cont_col_desc[] = {LV_GRID_CONTENT, LV_GRID_FR(1), LV_GRID_CONTENT, LV_GRID_TEMPLATE_LAST};
+    static lv_coord_t top_cont_row_desc[] = {LV_GRID_CONTENT, LV_GRID_TEMPLATE_LAST};
     lv_obj_set_grid_dsc_array(top_cont, top_cont_col_desc, top_cont_row_desc);
     lv_obj_set_grid_cell(top_cont, LV_GRID_ALIGN_STRETCH, 0, 3, LV_GRID_ALIGN_START, 0, 1);
     lv_obj_set_style_pad_hor(top_cont, lv_dpx(10), LV_PART_MAIN);
@@ -179,25 +181,47 @@ void CalendarUI::do_render(lv_obj_t* parent) {
     auto hor_line = create_line(outer_cont, orientation_t::horizontal, 0, 3, 1, 1);
     lv_obj_set_style_pad_top(hor_line, lv_dpx(6), LV_PART_MAIN);
 
-    auto first_half = lv_obj_create(outer_cont);
+    auto first_half_cont = lv_obj_create(outer_cont);
+    reset_layout_container_styles(first_half_cont);
+    static lv_coord_t first_half_cont_col_desc[] = {LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+    static lv_coord_t first_half_cont_row_desc[] = {LV_GRID_CONTENT, LV_GRID_FR(1), LV_GRID_CONTENT,
+                                                    LV_GRID_TEMPLATE_LAST};
+    lv_obj_set_grid_dsc_array(first_half_cont, first_half_cont_col_desc, first_half_cont_row_desc);
+    lv_obj_set_grid_cell(first_half_cont, LV_GRID_ALIGN_STRETCH, is_second_half ? 2 : 0, LV_GRID_ALIGN_STRETCH, 2);
+
+    auto first_half_top_ellipsis = create_ellipsis_obj(first_half_cont, 0, 0);
+    auto first_half_bottom_ellipsis = create_ellipsis_obj(first_half_cont, 0, 2);
+
+    auto first_half = lv_obj_create(first_half_cont);
     reset_layout_container_styles(first_half);
     static lv_coord_t first_half_col_desc[] = {LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
     static lv_coord_t first_half_row_desc[] = {
         LV_GRID_CONTENT, LV_GRID_FR(1), LV_GRID_CONTENT, LV_GRID_CONTENT, LV_GRID_FR(1), LV_GRID_CONTENT,
         LV_GRID_CONTENT, LV_GRID_FR(1), LV_GRID_CONTENT, LV_GRID_CONTENT, LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
     lv_obj_set_grid_dsc_array(first_half, first_half_col_desc, first_half_row_desc);
-    lv_obj_set_grid_cell(first_half, LV_GRID_ALIGN_STRETCH, is_second_half ? 2 : 0, LV_GRID_ALIGN_STRETCH, 2);
+    lv_obj_set_grid_cell(first_half, LV_GRID_ALIGN_STRETCH, 0, LV_GRID_ALIGN_STRETCH, 1);
 
     create_line(outer_cont, orientation_t::vertical, 1, 2);
 
-    auto second_half = lv_obj_create(outer_cont);
+    auto second_half_cont = lv_obj_create(outer_cont);
+    reset_layout_container_styles(second_half_cont);
+    static lv_coord_t second_half_cont_col_desc[] = {LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+    static lv_coord_t second_half_cont_row_desc[] = {LV_GRID_CONTENT, LV_GRID_FR(1), LV_GRID_CONTENT,
+                                                     LV_GRID_TEMPLATE_LAST};
+    lv_obj_set_grid_dsc_array(second_half_cont, second_half_cont_col_desc, second_half_cont_row_desc);
+    lv_obj_set_grid_cell(second_half_cont, LV_GRID_ALIGN_STRETCH, is_second_half ? 0 : 2, LV_GRID_ALIGN_STRETCH, 2);
+
+    auto second_half_top_ellipsis = create_ellipsis_obj(second_half_cont, 0, 0);
+    auto second_half_bottom_ellipsis = create_ellipsis_obj(second_half_cont, 0, 2);
+
+    auto second_half = lv_obj_create(second_half_cont);
     reset_layout_container_styles(second_half);
     static lv_coord_t second_half_col_desc[] = {LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
     static lv_coord_t second_half_row_desc[] = {LV_GRID_CONTENT, LV_GRID_FR(1), LV_GRID_CONTENT,
                                                 LV_GRID_CONTENT, LV_GRID_FR(1), LV_GRID_CONTENT,
                                                 LV_GRID_CONTENT, LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
     lv_obj_set_grid_dsc_array(second_half, second_half_col_desc, second_half_row_desc);
-    lv_obj_set_grid_cell(second_half, LV_GRID_ALIGN_STRETCH, is_second_half ? 0 : 2, LV_GRID_ALIGN_STRETCH, 2);
+    lv_obj_set_grid_cell(second_half, LV_GRID_ALIGN_STRETCH, 0, LV_GRID_ALIGN_STRETCH, 1);
 
     create_line(first_half, orientation_t::horizontal, 0, 2);
     create_line(first_half, orientation_t::horizontal, 0, 5);
@@ -222,6 +246,77 @@ void CalendarUI::do_render(lv_obj_t* parent) {
         create_day(second_half, 5, 0, 3, week_column_t::right);
         create_day(second_half, 6, 0, 6, week_column_t::right);
     }
+
+    // Check whether everything fits on the screen.
+
+    lv_obj_update_layout(parent);
+
+    // Scroll the content to hide any finished events. If we show the ellipsis, the panel
+    // size changes so we need to scroll again.
+
+    if (scroll_content(first_half, is_second_half ? week_column_t::right : week_column_t::left)) {
+        lv_obj_clear_flag(first_half_top_ellipsis, LV_OBJ_FLAG_HIDDEN);
+
+        lv_obj_update_layout(parent);
+        scroll_content(first_half, is_second_half ? week_column_t::right : week_column_t::left);
+    }
+    if (scroll_content(second_half, is_second_half ? week_column_t::left : week_column_t::right)) {
+        lv_obj_clear_flag(second_half_top_ellipsis, LV_OBJ_FLAG_HIDDEN);
+
+        lv_obj_update_layout(parent);
+        scroll_content(second_half, is_second_half ? week_column_t::left : week_column_t::right);
+    }
+
+    // If there still are events hidden at the bottom, show the bottom ellipsis also.
+
+    lv_obj_update_layout(parent);
+
+    if (lv_obj_get_scroll_bottom(first_half) > 0) {
+        lv_obj_clear_flag(first_half_bottom_ellipsis, LV_OBJ_FLAG_HIDDEN);
+    }
+    if (lv_obj_get_scroll_bottom(second_half) > 0) {
+        lv_obj_clear_flag(second_half_bottom_ellipsis, LV_OBJ_FLAG_HIDDEN);
+    }
+}
+
+bool CalendarUI::scroll_content(lv_obj_t* cont, week_column_t week_column) {
+    if (!_scroll_to_cont || _scroll_to_cont_week_column != week_column) {
+        return false;
+    }
+
+    lv_area_t cont_area;
+    lv_area_t obj_area;
+
+    lv_obj_get_coords(cont, &cont_area);
+    lv_obj_get_coords(_scroll_to_cont, &obj_area);
+
+    auto scroll_bottom = lv_obj_get_scroll_bottom(cont);
+    auto offset = obj_area.y1 - cont_area.y1;
+
+    lv_obj_scroll_by(cont, 0, -min<lv_coord_t>(offset, scroll_bottom), LV_ANIM_OFF);
+
+    return true;
+}
+
+lv_obj_t* CalendarUI::create_ellipsis_obj(lv_obj_t* parent, uint8_t col, uint8_t row) {
+    auto cont = lv_obj_create(parent);
+    reset_layout_container_styles(cont);
+    lv_obj_add_flag(cont, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_set_style_pad_column(cont, lv_dpx(6), LV_PART_MAIN);
+    lv_obj_set_grid_cell(cont, LV_GRID_ALIGN_CENTER, col, LV_GRID_ALIGN_STRETCH, row);
+    lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_ROW);
+
+    for (auto i = 0; i < 3; i++) {
+        auto circle = lv_obj_create(cont);
+        lv_obj_set_scrollbar_mode(circle, LV_SCROLLBAR_MODE_OFF);
+        lv_obj_set_style_pad_ver(cont, lv_dpx(7), LV_PART_MAIN);
+        lv_obj_set_size(circle, lv_dpx(18), lv_dpx(18));
+        lv_obj_set_style_bg_color(circle, lv_color_black(), LV_PART_MAIN);
+        lv_obj_set_style_border_width(circle, 0, LV_PART_MAIN);
+        lv_obj_set_style_radius(circle, LV_RADIUS_CIRCLE, LV_PART_MAIN);
+    }
+
+    return cont;
 }
 
 lv_obj_t* CalendarUI::create_line(lv_obj_t* parent, orientation_t orientation, uint8_t col, uint8_t col_span,
@@ -284,6 +379,14 @@ void CalendarUI::create_day(lv_obj_t* parent, int weekday, uint8_t col, uint8_t 
     lv_obj_set_style_pad_ver(header_label, lv_dpx(10), LV_PART_MAIN);
 
     if (year == _data.today.year && month == _data.today.month && day == _data.today.day) {
+        // This is fragile. Yes, the where checking here that the day isn't the
+        // first day (because there's no point in scrolling if it's the first day).
+        // However, this can break if the rows don't start at 0 anymore.
+        if (row) {
+            _scroll_to_cont = outer_cont;
+            _scroll_to_cont_week_column = week_column;
+        }
+
         auto today_label = lv_label_create(outer_cont);
         lv_label_set_text(today_label, MSG_BULLSEYE);
         lv_obj_set_grid_cell(today_label, LV_GRID_ALIGN_STRETCH, 1, 1, LV_GRID_ALIGN_START, 0, 1);
@@ -297,6 +400,7 @@ void CalendarUI::create_day(lv_obj_t* parent, int weekday, uint8_t col, uint8_t 
     lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_grid_cell(cont, LV_GRID_ALIGN_STRETCH, 0, 2, LV_GRID_ALIGN_START, 1, 1);
     lv_obj_set_style_pad_row(cont, lv_dpx(8), LV_PART_MAIN);
+    lv_obj_set_style_pad_bottom(cont, lv_dpx(8), LV_PART_MAIN);
     if (week_column == week_column_t::left) {
         lv_obj_set_style_pad_right(cont, lv_dpx(12), LV_PART_MAIN);
     } else {
