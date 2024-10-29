@@ -271,10 +271,10 @@ void CalendarUI::do_render(lv_obj_t* parent) {
 
     lv_obj_update_layout(parent);
 
-    if (lv_obj_get_scroll_bottom(first_half) > 0) {
+    if (lv_obj_get_scroll_bottom(first_half) > lv_dpx(5)) {
         lv_obj_clear_flag(first_half_bottom_ellipsis, LV_OBJ_FLAG_HIDDEN);
     }
-    if (lv_obj_get_scroll_bottom(second_half) > 0) {
+    if (lv_obj_get_scroll_bottom(second_half) > lv_dpx(5)) {
         lv_obj_clear_flag(second_half_bottom_ellipsis, LV_OBJ_FLAG_HIDDEN);
     }
 }
@@ -291,6 +291,10 @@ bool CalendarUI::scroll_content(lv_obj_t* cont, week_column_t week_column) {
     lv_obj_get_coords(_scroll_to_cont, &obj_area);
 
     auto scroll_bottom = lv_obj_get_scroll_bottom(cont);
+    if (scroll_bottom < lv_dpx(5)) {
+        return false;
+    }
+
     auto offset = obj_area.y1 - cont_area.y1;
 
     lv_obj_scroll_by(cont, 0, -min<lv_coord_t>(offset, scroll_bottom), LV_ANIM_OFF);
