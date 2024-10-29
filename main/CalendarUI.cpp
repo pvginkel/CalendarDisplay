@@ -377,7 +377,7 @@ void CalendarUI::create_day(lv_obj_t* parent, int weekday, uint8_t col, uint8_t 
 
     auto header_label = lv_label_create(outer_cont);
     lv_label_set_text(header_label, header.c_str());
-    lv_obj_set_grid_cell(header_label, LV_GRID_ALIGN_STRETCH, 0, 1, LV_GRID_ALIGN_START, 0, 1);
+    lv_obj_set_grid_cell(header_label, LV_GRID_ALIGN_STRETCH, 0, 1, LV_GRID_ALIGN_CENTER, 0, 1);
     lv_obj_set_style_text_font(header_label, SMALL_MEDIUM_FONT, LV_PART_MAIN);
     lv_obj_set_style_pad_hor(header_label, lv_dpx(10), LV_PART_MAIN);
     lv_obj_set_style_pad_ver(header_label, lv_dpx(10), LV_PART_MAIN);
@@ -391,12 +391,22 @@ void CalendarUI::create_day(lv_obj_t* parent, int weekday, uint8_t col, uint8_t 
             _scroll_to_cont_week_column = week_column;
         }
 
-        auto today_label = lv_label_create(outer_cont);
+        auto icon_container = lv_obj_create(outer_cont);
+        reset_layout_container_styles(icon_container);
+        lv_obj_set_grid_cell(icon_container, LV_GRID_ALIGN_START, 1, 1, LV_GRID_ALIGN_CENTER, 0, 1);
+        lv_obj_set_style_pad_hor(icon_container, lv_dpx(10), LV_PART_MAIN);
+        lv_obj_set_style_pad_ver(icon_container, lv_dpx(10), LV_PART_MAIN);
+        lv_obj_set_flex_flow(icon_container, LV_FLEX_FLOW_ROW);
+
+        if (_data.stookalert == CalendarStookalertLevel::yellow) {
+            auto fire_label = lv_label_create(icon_container);
+            lv_label_set_text(fire_label, MSG_FIRE);
+            lv_obj_set_style_text_font(fire_label, SMALL_MEDIUM_FONT, LV_PART_MAIN);
+        }
+
+        auto today_label = lv_label_create(icon_container);
         lv_label_set_text(today_label, MSG_BULLSEYE);
-        lv_obj_set_grid_cell(today_label, LV_GRID_ALIGN_STRETCH, 1, 1, LV_GRID_ALIGN_START, 0, 1);
         lv_obj_set_style_text_font(today_label, SMALL_MEDIUM_FONT, LV_PART_MAIN);
-        lv_obj_set_style_pad_hor(today_label, lv_dpx(10), LV_PART_MAIN);
-        lv_obj_set_style_pad_ver(today_label, lv_dpx(10), LV_PART_MAIN);
     }
 
     auto cont = lv_obj_create(outer_cont);

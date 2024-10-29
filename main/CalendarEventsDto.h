@@ -32,12 +32,23 @@ struct CalendarEventDto {
     CalendarMultiDayInstanceDto instance;
 };
 
+enum class CalendarStookalertLevel {
+    missing = -1,
+    // Safe-ish.
+    yellow = 0,
+    // Maybe not.
+    orange = 1,
+    // Really not.
+    red = 2
+};
+
 struct CalendarEventsDto {
     CalendarTimestampDto start;
     CalendarTimestampDto end;
     CalendarTimestampDto countdown;
     CalendarTimestampDto today;
     vector<CalendarEventDto> events;
+    CalendarStookalertLevel stookalert;
 
     CalendarEventsDto() = default;
     CalendarEventsDto(const CalendarEventsDto&) = delete;

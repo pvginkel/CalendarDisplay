@@ -28,6 +28,7 @@
 #define MSG_BULLSEYE "\U0001F3AF"
 #define MSG_PARTY_POPPER "\U0001F389"
 #define MSG_COUNTDOWN "Nog %d dagen"
+#define MSG_FIRE "\U0001F525"
 
 #define FA_CUBE "\U0000f1b2"
 #define FA_CUBES "\U0000f1b3"

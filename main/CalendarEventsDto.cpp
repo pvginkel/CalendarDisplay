@@ -166,6 +166,18 @@ bool CalendarEventsDto::from_json(const char* json_string, CalendarEventsDto& da
         return false;
     }
 
+    const auto stookalert = cJSON_GetObjectItemCaseSensitive(*root, "stookalert");
+    if (cJSON_IsNull(stookalert)) {
+        data.stookalert = CalendarStookalertLevel::missing;
+    }
+    else if (cJSON_IsNumber(stookalert)) {
+        data.stookalert = (CalendarStookalertLevel)stookalert->valueint;
+    }
+    else {
+        ESP_LOGE(TAG, "Invalid stookalert level");
+        return false;
+    }
+
     cJSON* event;
     cJSON_ArrayForEach(event, events) {
         CalendarEventDto dto;
