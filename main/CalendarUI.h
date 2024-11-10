@@ -39,6 +39,7 @@ private:
     void do_update() override;
     void update_data();
     void set_offset(int offset);
+    void set_off(bool off);
 #endif
 
     CalendarEventsDto _data{};
@@ -46,6 +47,7 @@ private:
     Buttons* _buttons;
     uint32_t _last_hash;
     int _offset{0};
+    bool _off{false};
     lv_obj_t* _scroll_to_cont{nullptr};
     week_column_t _scroll_to_cont_week_column{};
 #ifndef LV_SIMULATOR

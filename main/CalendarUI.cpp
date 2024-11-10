@@ -27,7 +27,7 @@ void CalendarUI::do_begin() {
     _buttons->on_next_page([this]() { set_offset(_offset + 1); });
     _buttons->on_previous_page([this]() { set_offset(_offset - 1); });
     _buttons->on_home([this]() { set_offset(0); });
-    _buttons->on_off([]() { ESP_LOGI(TAG, "Turning off has not been implemented"); });
+    _buttons->on_off([this]() { set_off(!_off); });
 #endif
 }
 
@@ -112,9 +112,19 @@ void CalendarUI::set_offset(int offset) {
     }
 }
 
+void CalendarUI::set_off(bool off) {
+    _off = off;
+
+    render();
+}
+
 #endif
 
 void CalendarUI::do_render(lv_obj_t* parent) {
+    if (_off) {
+        return;
+    }
+
     _scroll_to_cont = nullptr;
 
     auto outer_cont = lv_obj_create(parent);
