@@ -36,8 +36,8 @@ LOG_TAG(IT8951);
 #define USDEF_I80_CMD_DPY_BUF_AREA 0x0037
 #define USDEF_I80_CMD_VCOM 0x0039
 
-#define FRONT_GRAY_VALUE 0xf0
-#define BACK_GRAY_VALUE 0x00
+#define FRONT_GRAY_VALUE 0x00
+#define BACK_GRAY_VALUE 0xf0
 
 /*-----------------------------------------------------------------------
  IT8951 mode defines
@@ -458,6 +458,20 @@ void IT8951::clear_screen() {
         .h = _height,
     };
 
+    load_image_start(area, _memory_address, IT8951_ROTATE_0, IT8951_PIXEL_FORMAT_1BPP);
+
+    auto write_len = area.w / 8 * area.h;
+
+    for (uint32_t offset = 0; offset < write_len; offset += _buffer_len) {
+        auto buffer = get_buffer();
+
+        memset(buffer, 0xff, _buffer_len);
+
+        load_image_flush_buffer(min(size_t(write_len - offset), size_t(_buffer_len)));
+    }
+
+    load_image_end();
+
     display_area(area, _memory_address, IT8951_PIXEL_FORMAT_1BPP, IT8951_DISPLAY_MODE_INIT);
 }
 
@@ -560,7 +574,7 @@ void IT8951::display_area(IT8951Area& area, uint32_t target_memory_address, it89
         write_reg(BGVR, (FRONT_GRAY_VALUE << 8) | BACK_GRAY_VALUE);
     }
 
-    if (target_memory_address) {
+    if (!target_memory_address) {
         write_command(USDEF_I80_CMD_DPY_AREA);
         write_data(area.x);
         write_data(area.y);

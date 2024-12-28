@@ -1,6 +1,6 @@
 {
   "idf.adapterTargetName": "esp32s3",
-  "idf.portWin": "COM8",
+  "idf.portWin": "COM6",
   "idf.flashType": "UART",
   "files.associations": {
     "array": "cpp",
@@ -57,5 +57,7 @@
   "files.exclude": {
     "documentation": true,
     "LvglWindowsSimulator": true
-  }
+  },
+  "idf.espIdfPathWin": "C:\\Users\\pvgin\\esp\\v5.1.3\\esp-idf",
+  "idf.toolsPathWin": "C:\\Users\\pvgin\\.espressif"
 }
