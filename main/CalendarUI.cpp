@@ -63,7 +63,7 @@ void CalendarUI::do_update() {
 }
 
 void CalendarUI::update_data() {
-    auto url = format(CONFIG_CALENDAR_ENDPOINT, _offset);
+    auto url = strformat(CONFIG_CALENDAR_ENDPOINT, _offset);
 
     esp_http_client_config_t config = {
         .url = url.c_str(),
@@ -141,9 +141,9 @@ void CalendarUI::do_render(lv_obj_t* parent) {
     lv_obj_set_grid_cell(top_cont, LV_GRID_ALIGN_STRETCH, 0, 3, LV_GRID_ALIGN_START, 0, 1);
     lv_obj_set_style_pad_hor(top_cont, lv_dpx(10), LV_PART_MAIN);
 
-    auto left_header = format("%.3s", get_month(_data.start.month));
+    auto left_header = strformat("%.3s", get_month(_data.start.month));
     if (_data.start.month != _data.end.month) {
-        left_header += format("/%.3s", get_month(_data.end.month));
+        left_header += strformat("/%.3s", get_month(_data.end.month));
     }
 
     auto left_header_label = lv_label_create(top_cont);
@@ -161,9 +161,9 @@ void CalendarUI::do_render(lv_obj_t* parent) {
     auto start_week = getisoweek(start_time_info);
     auto end_week = getisoweek(end_time_info);
 
-    auto right_header = format(MSG_WEEK " %d", start_week);
+    auto right_header = strformat(MSG_WEEK " %d", start_week);
     if (start_week != end_week) {
-        right_header += format("/%d", end_week);
+        right_header += strformat("/%d", end_week);
     }
 
     auto is_second_half = ((start_time_info.tm_wday + 6) % 7) >= 4;
@@ -179,7 +179,7 @@ void CalendarUI::do_render(lv_obj_t* parent) {
         auto countdown = mktime(&countdown_time_info);
         auto today = mktime(&today_time_info);
         auto countdown_days = (int)((countdown - today) / (24ull * 3600));
-        auto middle_header = format(MSG_COUNTDOWN, countdown_days);
+        auto middle_header = strformat(MSG_COUNTDOWN, countdown_days);
 
         auto middle_header_label = lv_label_create(top_cont);
         lv_label_set_text(middle_header_label, middle_header.c_str());
@@ -374,7 +374,7 @@ void CalendarUI::create_day(lv_obj_t* parent, int weekday, uint8_t col, uint8_t 
     auto month = time_info.tm_mon + 1;
     auto day = time_info.tm_mday;
 
-    auto header = format("%d. %s", day, weekday_name);
+    auto header = strformat("%d. %s", day, weekday_name);
 
     // Render the events.
 
@@ -498,7 +498,7 @@ void CalendarUI::create_event(lv_obj_t* parent, const CalendarEventDto& value) {
         event_text += value.summary;
     }
     if (value.instance.instance != 0) {
-        event_text += format(" " MSG_DAY_OF, value.instance.instance, value.instance.total);
+        event_text += strformat(" " MSG_DAY_OF, value.instance.instance, value.instance.total);
     }
 
     auto summary_label = lv_label_create(cont);
@@ -510,8 +510,8 @@ void CalendarUI::create_event(lv_obj_t* parent, const CalendarEventDto& value) {
     lv_obj_set_size(summary_label, LV_PCT(100), LV_SIZE_CONTENT);
 
     if (value.start.has_time) {
-        auto start = format("%d:%02d", value.start.hour, value.start.minute);
-        auto end = format("%d:%02d", value.end.hour, value.end.minute);
+        auto start = strformat("%d:%02d", value.start.hour, value.start.minute);
+        auto end = strformat("%d:%02d", value.end.hour, value.end.minute);
         string time_text;
 
         if (value.instance.instance == 0) {

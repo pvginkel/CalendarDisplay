@@ -2,7 +2,7 @@
 
 #include "support.h"
 
-string format(const char* fmt, ...) {
+string strformat(const char* fmt, ...) {
     va_list ap;
 
     va_start(ap, fmt);

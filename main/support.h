@@ -8,7 +8,7 @@
 
 #define esp_get_millis() uint32_t(esp_timer_get_time() / 1000ull)
 
-string format(const char* fmt, ...);
+string strformat(const char* fmt, ...);
 int getisoweek(tm& time_info);
 
 #ifdef NDEBUG
