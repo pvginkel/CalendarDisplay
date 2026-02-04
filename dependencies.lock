@@ -1,8 +1,50 @@
 dependencies:
+  esp-mdm:
+    dependencies:
+    - name: idf
+      version: '>=5.3'
+    - name: esp-mqtt-support
+      path: ../esp-mqtt-support
+    - name: esp-network-support
+      path: ../esp-network-support
+    - name: esp-support
+      path: ../esp-support
+    source:
+      path: C:\Projects\esp-libs\esp-mdm
+      type: local
+    version: 0.1.0
+  esp-mqtt-support:
+    dependencies:
+    - name: idf
+      version: '>=5.3'
+    - name: esp-support
+      path: ../esp-support
+    source:
+      path: C:\Projects\esp-libs\esp-mqtt-support
+      type: local
+    version: 0.1.0
+  esp-network-support:
+    dependencies:
+    - name: idf
+      version: '>=5.3'
+    - name: esp-support
+      path: ../esp-support
+    source:
+      path: C:\Projects\esp-libs\esp-network-support
+      type: local
+    version: 0.1.0
+  esp-support:
+    dependencies:
+    - name: idf
+      version: '>=5.3'
+    source:
+      path: C:\Projects\esp-libs\esp-support
+      type: local
+    version: 0.1.0
   idf:
     source:
       type: idf
-    version: 5.3.2
+    version: 5.5.2
   it8951-esp32:
     component_hash: 8b4b11a50ac5c879fd25ca0dfabb0a0be47a9b09720eceddf4de57ea40f4c42e
     dependencies:
@@ -21,9 +63,13 @@ dependencies:
       type: service
     version: 8.2.0
 direct_dependencies:
+- esp-mdm
+- esp-mqtt-support
+- esp-network-support
+- esp-support
 - idf
 - it8951-esp32
 - lvgl/lvgl
-manifest_hash: 49a47792fcd2e4e3d49e08bde0ac32bece7fa2b74fa5c4b481b26183b41e3359
+manifest_hash: 7cc5f8f08d9e5dcac18d14463b14fa2ffd0d4a2e884fba356171610462d02346
 target: esp32s3
 version: 2.0.0
