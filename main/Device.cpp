@@ -37,7 +37,7 @@ void Device::set_on(bool on) {
 }
 
 void Device::flush_cb(lv_disp_drv_t* disp_drv, const lv_area_t* area, lv_color_t* color_p) {
-    ESP_ERROR_ASSERT(LV_COLOR_DEPTH == 16);
+    ESP_ASSERT_CHECK(LV_COLOR_DEPTH == 16);
 
     ESP_LOGD(TAG, "Updating display %dx%d %dx%d", area->x1, area->y1, area->x2, area->y2);
 

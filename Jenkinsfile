@@ -1,17 +1,23 @@
 library('JenkinsPipelineUtils') _
 
 withCredentials([
-    string(credentialsId: 'WIFI_PASSWORD', variable: 'WIFI_PASSWORD'),
-    string(credentialsId: 'CALENDAR_BEARER_TOKEN', variable: 'CALENDAR_BEARER_TOKEN'),
+    string(credentialsId: 'IOTSUPPORT_CLIENT_ID', variable: 'IOTSUPPORT_CLIENT_ID'),
+    string(credentialsId: 'IOTSUPPORT_CLIENT_SECRET', variable: 'IOTSUPPORT_CLIENT_SECRET'),
 ]) {
     podTemplate(inheritFrom: 'jenkins-agent-large', containers: [
-        containerTemplate(name: 'idf', image: 'espressif/idf:v5.3.2', command: 'sleep', args: 'infinity', envVars: [
-            containerEnvVar(key: 'WIFI_PASSWORD', value: '$WIFI_PASSWORD'),
-            containerEnvVar(key: 'CALENDAR_BEARER_TOKEN', value: '$CALENDAR_BEARER_TOKEN'),
+        containerTemplate(name: 'idf', image: 'espressif/idf:v5.5.2', command: 'sleep', args: 'infinity', envVars: [
+            containerEnvVar(key: 'IOTSUPPORT_CLIENT_ID', value: '$IOTSUPPORT_CLIENT_ID'),
+            containerEnvVar(key: 'IOTSUPPORT_CLIENT_SECRET', value: '$IOTSUPPORT_CLIENT_SECRET'),
         ])
     ]) {
         node(POD_LABEL) {
             stage('Build calendar display') {
+                dir('esp-libs') {
+                    git branch: 'main',
+                        credentialsId: '5f6fbd66-b41c-405f-b107-85ba6fd97f10',
+                        url: 'https://github.com/pvginkel/esp-libs.git'
+                }
+
                 dir('CalendarDisplay') {
                     git branch: 'main',
                         credentialsId: '5f6fbd66-b41c-405f-b107-85ba6fd97f10',
@@ -22,24 +28,15 @@ withCredentials([
                         // for setting the uid/gid.
                         sh 'git config --global --add safe.directory \'*\''
 
-                        sh 'chmod +x scripts/dockerbuild.sh'
-                        sh '/opt/esp/entrypoint.sh scripts/dockerbuild.sh'
+                        sh '/opt/esp/entrypoint.sh idf.py build'
                     }
                 }
             }
-            
+
             stage('Deploy calendar display') {
-                dir('HelmCharts') {
-                    git branch: 'main',
-                        credentialsId: '5f6fbd66-b41c-405f-b107-85ba6fd97f10',
-                        url: 'https://github.com/pvginkel/HelmCharts.git'
-                }
-
                 dir('CalendarDisplay') {
-                    sh 'cp build/esp32-calendar-display.bin calendar-display-ota.bin'
-
                     sh 'chmod +x scripts/upload.sh'
-                    sh 'scripts/upload.sh ../HelmCharts/assets/kubernetes-signing-key calendar-display-ota.bin'
+                    sh 'scripts/upload.sh https://iot.ginbov.nl'
                 }
             }
         }

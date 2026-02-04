@@ -134,46 +134,42 @@ void CalendarEventsDto::clear() {
 bool CalendarEventsDto::from_json(const char* json_string, CalendarEventsDto& data) {
     data.clear();
 
-    cJSON_Data root = {cJSON_Parse(json_string)};
-    if (*root == nullptr) {
-        ESP_LOGE(TAG, "Failed to parse raw JSON string");
-        return false;
-    }
+    const auto root = cJSON_Parse(json_string);
+    ESP_ASSERT_CHECK(root);
+    DEFER(cJSON_Delete(root));
 
-    const auto start = cJSON_GetObjectItemCaseSensitive(*root, "start");
+    const auto start = cJSON_GetObjectItemCaseSensitive(root, "start");
     if (!parse_calendar_timestamp(start, data.start)) {
         return false;
     }
 
-    const auto end = cJSON_GetObjectItemCaseSensitive(*root, "end");
+    const auto end = cJSON_GetObjectItemCaseSensitive(root, "end");
     if (!parse_calendar_timestamp(end, data.end)) {
         return false;
     }
 
-    const auto countdown = cJSON_GetObjectItemCaseSensitive(*root, "countdown");
+    const auto countdown = cJSON_GetObjectItemCaseSensitive(root, "countdown");
     if (!cJSON_IsNull(countdown) && !parse_calendar_timestamp(countdown, data.countdown)) {
         return false;
     }
 
-    auto today = cJSON_GetObjectItemCaseSensitive(*root, "today");
+    auto today = cJSON_GetObjectItemCaseSensitive(root, "today");
     if (!parse_calendar_timestamp(today, data.today)) {
         return false;
     }
 
-    const auto events = cJSON_GetObjectItemCaseSensitive(*root, "events");
+    const auto events = cJSON_GetObjectItemCaseSensitive(root, "events");
     if (!cJSON_IsArray(events)) {
         ESP_LOGE(TAG, "Calendar events is not an array");
         return false;
     }
 
-    const auto stookalert = cJSON_GetObjectItemCaseSensitive(*root, "stookalert");
+    const auto stookalert = cJSON_GetObjectItemCaseSensitive(root, "stookalert");
     if (cJSON_IsNull(stookalert)) {
         data.stookalert = CalendarStookalertLevel::missing;
-    }
-    else if (cJSON_IsNumber(stookalert)) {
+    } else if (cJSON_IsNumber(stookalert)) {
         data.stookalert = (CalendarStookalertLevel)stookalert->valueint;
-    }
-    else {
+    } else {
         ESP_LOGE(TAG, "Invalid stookalert level");
         return false;
     }

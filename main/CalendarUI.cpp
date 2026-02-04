@@ -6,8 +6,10 @@
 #include <chrono>
 #include <ctime>
 
+#include "Application.h"
 #include "Fonts.h"
 #include "Messages.h"
+#include "http_support.h"
 #include "lv_support.h"
 
 LOG_TAG(CalendarUI);
@@ -68,13 +70,33 @@ void CalendarUI::update_data() {
     esp_http_client_config_t config = {
         .url = url.c_str(),
         .timeout_ms = CONFIG_CALENDAR_ENDPOINT_RECV_TIMEOUT,
+        .buffer_size_tx = 4096,
     };
 
     ESP_LOGI(TAG, "Downloading calendar from %s", config.url);
 
+    auto client = esp_http_client_init(&config);
+    if (!client) {
+        ESP_LOGE(TAG, "Failed to init HTTP client");
+        return;
+    }
+    DEFER(esp_http_client_cleanup(client));
+
+    esp_http_client_set_header(client, "Authorization", _application->get_authorization().c_str());
+
+    if (esp_http_client_open(client, 0) != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to open HTTP connection");
+        return;
+    }
+
+    auto length = esp_http_client_fetch_headers(client);
+    if (length < 0) {
+        ESP_LOGE(TAG, "Failed to fetch headers");
+        return;
+    }
+
     string json;
-    auto err = esp_http_download_string(config, json, 128 * 1024, "Bearer " CONFIG_CALENDAR_BEARER_TOKEN);
-    if (err != ESP_OK) {
+    if (esp_http_get_response(client, json, 128 * 1024) != ESP_OK) {
         ESP_LOGE(TAG, "Failed to download calendar");
         return;
     }

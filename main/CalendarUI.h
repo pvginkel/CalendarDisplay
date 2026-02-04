@@ -5,12 +5,15 @@
 #include "Device.h"
 #include "LvglUI.h"
 
+class Application;
+
 class CalendarUI : public LvglUI {
     enum class orientation_t { horizontal, vertical };
     enum class week_column_t { left, right };
 
 public:
-    CalendarUI(Device* device, Buttons* buttons) : _device(device), _buttons(buttons) {}
+    CalendarUI(Application* application, Device* device, Buttons* buttons)
+        : _application(application), _device(device), _buttons(buttons) {}
 
 #ifdef LV_SIMULATOR
     CalendarEventsDto& get_data() { return _data; }
@@ -42,6 +45,7 @@ private:
     void set_off(bool off);
 #endif
 
+    Application* _application{};
     CalendarEventsDto _data{};
     Device* _device;
     Buttons* _buttons;

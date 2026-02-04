@@ -30,8 +30,10 @@ using namespace std;
 #include <cstdarg>
 
 #include "cJSON.h"
+#include "defer.h"
 #include "driver/gpio.h"
 #include "driver/i2c.h"
+#include "error.h"
 #include "esp_app_format.h"
 #include "esp_err.h"
 #include "esp_event.h"
@@ -51,7 +53,7 @@ using namespace std;
 #include "mqtt_client.h"
 #include "nvs_flash.h"
 #include "sdkconfig.h"
-#include "secrets.h"
+#include "strformat.h"
 
 #else
 
