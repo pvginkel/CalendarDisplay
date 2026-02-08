@@ -103,6 +103,7 @@ void CalendarUI::update_data() {
 
     auto hash = calculate_hash(json.c_str());
     if (hash == _last_hash) {
+        ESP_LOGI(TAG, "Skipping screen update because data is unchanged");
         return;
     }
 
