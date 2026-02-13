@@ -135,7 +135,12 @@ bool CalendarEventsDto::from_json(const char* json_string, CalendarEventsDto& da
     data.clear();
 
     const auto root = cJSON_Parse(json_string);
-    ESP_ASSERT_CHECK(root);
+    if (!root) {
+        ESP_LOGE(TAG, "Failed to parse calendar events JSON");
+        ESP_LOGE(TAG, "JSON loaded: %s", json_string);
+        ESP_LOGE(TAG, "Error offset: %d", (int)(cJSON_GetErrorPtr() - json_string));
+        return false;
+    }
     DEFER(cJSON_Delete(root));
 
     const auto start = cJSON_GetObjectItemCaseSensitive(root, "start");
