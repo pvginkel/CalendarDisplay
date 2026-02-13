@@ -95,6 +95,12 @@ void CalendarUI::update_data() {
         return;
     }
 
+    const auto status_code = esp_http_client_get_status_code(client);
+    if (status_code < 200 || status_code >= 300) {
+        ESP_LOGE(TAG, "HTTP request failed with status code %d", status_code);
+        return;
+    }
+
     string json;
     if (esp_http_get_response(client, json, 128 * 1024) != ESP_OK) {
         ESP_LOGE(TAG, "Failed to download calendar");
