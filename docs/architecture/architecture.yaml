@@ -1,0 +1,53 @@
+schemaVersion: "0.1"
+producer: calendar-display
+
+# Calendar Display — ESP32-S3 e-paper wall display firmware.
+#
+# This repo introduces the FIRMWARE, not the physical device. The hardware
+# units (one per «SoftwareProduct» here) are registered in IoT Support and will
+# be generated as device: instances by that producer; this artifact owns only
+# the logical firmware product and its consumption edges.
+#
+# Every esp-mdm device shares three platform edges — the IoT Support device API
+# (firmware fetch / config / provisioning / coredump), the MQTT broker (state,
+# logs, control), and Keycloak (M2M client-credentials). Those addresses are
+# provisioned into device NVS by IoT Support, so the firmware carries no boundBy
+# recipe; IoT Support's device generator resolves the realized per-device edges.
+
+systemSoftware:
+  - id: ss:calendar-display,09ccb207-004b-4918-b672-7909fb4050b7
+    label: Calendar Display firmware
+    summary: >-
+      ESP-IDF firmware for the IT8951 e-paper wall calendar (ESP32-S3). Fetches
+      upcoming events from the Calendar Support service and renders a multi-day
+      view; managed over the air by IoT Support.
+    introduced: 2024-09-15
+    lifecycle: active
+    stereotype: SoftwareProduct
+    sourceRepository: git:pvginkel/CalendarDisplay
+    stats:
+      mcu: esp32-s3
+      display: IT8951 e-paper
+
+relations:
+  # ── Universal MDM platform edges (NVS-provisioned by IoT Support; no boundBy) ──
+  - id: rel:calendar-display-consumes-iotsupport
+    source: ss:calendar-display,09ccb207-004b-4918-b672-7909fb4050b7
+    target: svc:iotsupport-api,b7c5b5ba-36eb-47b8-bf7e-5c50fa1a3656
+    type: Association
+  - id: rel:calendar-display-consumes-pub-sub
+    source: ss:calendar-display,09ccb207-004b-4918-b672-7909fb4050b7
+    target: cap:pub-sub-broker
+    type: Association
+  - id: rel:calendar-display-consumes-iam
+    source: ss:calendar-display,09ccb207-004b-4918-b672-7909fb4050b7
+    target: cap:iam
+    type: Association
+
+  # ── Device-specific: calendar events backend ──
+  # Endpoint is a compile-time constant (calendarsupport.home); hardcoded base
+  # URL → no boundBy, mirroring the batch-1 external-svc convention.
+  - id: rel:calendar-display-consumes-calendar-support
+    source: ss:calendar-display,09ccb207-004b-4918-b672-7909fb4050b7
+    target: svc:calendar-support,e469b02a-13b8-480c-b1c6-db17a3783210
+    type: Association
