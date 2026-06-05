@@ -51,3 +51,10 @@ relations:
     source: ss:calendar-display,09ccb207-004b-4918-b672-7909fb4050b7
     target: svc:calendar-support,e469b02a-13b8-480c-b1c6-db17a3783210
     type: Association
+
+  # Realizes the IoT-device capability — the selection axis for the IoT view
+  # (in-house ESP32 firmware, managed by IoTSupport, integrated via MQTT discovery).
+  - id: rel:calendar-display-realizes-iot-device
+    source: ss:calendar-display,09ccb207-004b-4918-b672-7909fb4050b7
+    target: cap:iot-device
+    type: Realization
