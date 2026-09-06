@@ -1,0 +1,29 @@
+# The environment for the CalendarDisplay firmware.
+# Schema: https://kubecoder.home/help/reference/config-yaml/
+#
+# Everything not written here is the documented default (no services, no image
+# builder, no published ports, no projected secrets, cwd = this repo's folder).
+
+# esp-libs carries the shared ESP-IDF components this firmware builds against,
+# and the build reaches them by *relative path* from two places:
+#   - ../esp-libs/<component>/sdkconfig.defaults   from CMakeLists.txt
+#   - ../../esp-libs/<component>                   from main/idf_component.yml
+# so it has to sit beside this checkout — the same layout the Jenkinsfile
+# arranges by cloning it into a sibling directory. Without it the build stops at
+# CMake configure with a missing component path. Read-only from here: nothing in
+# this repo writes into esp-libs.
+repos:
+  - url: https://github.com/pvginkel/esp-libs
+    shared: true
+
+capabilities:
+  github: rw
+
+# ESP-IDF lives in a sidecar; `idf.py` is not in the dev container. The catalog
+# entry supplies the activation wrapper and the ccache overlay, so a command is
+# a bare `cexec esp-idf idf.py …`.
+tools:
+  - use: esp-idf
+
+setup:
+  - kc project setup

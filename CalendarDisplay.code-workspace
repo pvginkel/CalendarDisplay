@@ -1,23 +1,18 @@
 {
   "folders": [
     {
-      "name": "CalendarDisplay",
       "path": ".",
     },
     {
-      "name": "esp-support",
       "path": "../esp-libs/esp-support",
     },
     {
-      "name": "esp-mdm",
       "path": "../esp-libs/esp-mdm",
     },
     {
-      "name": "esp-network-support",
       "path": "../esp-libs/esp-network-support",
     },
     {
-      "name": "esp-mqtt-support",
       "path": "../esp-libs/esp-mqtt-support",
     },
   ],

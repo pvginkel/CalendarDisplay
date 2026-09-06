@@ -1,0 +1,35 @@
+# Curated automation for CalendarDisplay.
+# Schema: https://kubecoder.home/help/reference/project-yaml/
+#
+# One component: the repository is a single ESP-IDF project. `tools/` holds a
+# one-off font-generation helper (pnpm + ts-node, driven by a .bat) and an
+# uninitialised Windows LVGL simulator submodule; neither is part of the build,
+# so neither gets a component — wiring them would pull the `frontend` toolchain
+# into the environment for a script nobody runs here.
+projects:
+  root:
+    description: >-
+      ESP32-S3 e-paper calendar display firmware (ESP-IDF), built against the
+      shared components in the sibling esp-libs checkout.
+
+    # The main build pipeline. AaC/CalendarDisplay is a second job on this repo:
+    # it runs the architecture producer (Jenkinsfile.architecture), which is what
+    # `lint` below mirrors.
+    jenkins: Firmware/CalendarDisplay
+
+    # Nothing to set up: idf.py resolves and downloads the managed components
+    # itself on the first build, into the gitignored managed_components/.
+
+    # As CI runs it. `cexec esp-idf` already goes through the image's activation
+    # wrapper, so the CI-side `/opt/esp/entrypoint.sh` prefix is not repeated.
+    build: cexec esp-idf idf.py build
+
+    # test: unset — this repo has no test suite. The firmware is validated on the
+    # device, and CI's second stage is a deploy (scripts/upload.sh), not a test.
+
+    # The architecture-as-code gate, exactly as Jenkinsfile.architecture runs it.
+    # Note this is a *network call inside a gate*: the script POSTs each artifact
+    # to https://architecture.webathome.org/api/validate and exits 2 if it cannot
+    # reach it, so the gate fails when that service is down. Plain python3, no
+    # toolchain needed.
+    lint: ./scripts/arch-validate.py docs/architecture/*.yaml
