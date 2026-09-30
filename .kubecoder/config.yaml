@@ -24,3 +24,5 @@ capabilities:
 # a bare `cexec esp-idf idf.py …`.
 tools:
   - use: esp-idf
+  # arch-validate, the architecture artifact's lint gate.
+  - use: aac-tools

@@ -27,9 +27,9 @@ projects:
     # test: unset — this repo has no test suite. The firmware is validated on the
     # device, and CI's second stage is a deploy (scripts/upload.sh), not a test.
 
-    # The architecture-as-code gate, exactly as Jenkinsfile.architecture runs it.
-    # Note this is a *network call inside a gate*: the script POSTs each artifact
-    # to https://architecture.webathome.org/api/validate and exits 2 if it cannot
-    # reach it, so the gate fails when that service is down. Plain python3, no
-    # toolchain needed.
-    lint: ./scripts/arch-validate.py docs/architecture/*.yaml
+    # The architecture-as-code gate, exactly as Jenkinsfile.architecture runs it,
+    # from the aac-tools toolchain. Note this is a *network call inside a gate*:
+    # it POSTs each artifact to https://architecture.webathome.org/api/validate
+    # and exits 2 if it cannot reach it, so the gate fails when that service is
+    # down.
+    lint: cexec aac-tools arch-validate docs/architecture/*.yaml
